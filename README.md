@@ -3,6 +3,7 @@
 > Auction house addon for World of Warcraft **3.3.5a (WotLK)** – a backport of modern Auctionator.
 
 Shopping lists, selling, cancelling, price history and tooltips in the modern Auctionator style, rebuilt for the 3.3.5a client.
+<img width="1114" height="609" alt="image" src="https://github.com/user-attachments/assets/b6761604-c53f-41b6-a20c-c93f734eecd3" />
 
 **Based on [Auctionator](https://github.com/Auctionator/Auctionator)** by Borjamacare and plusmouse (MIT licence).
 
