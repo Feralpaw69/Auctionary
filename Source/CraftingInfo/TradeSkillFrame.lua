@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Cost and profit of the selected recipe, shown in the profession window
 -- below the reagents. The numbers come straight from the open window, so
@@ -6,7 +6,7 @@ local Auctionator = Auctionary
 local text
 
 local function Money(amount)
-  return Auctionator.Compat.GetMoneyString(math.floor(amount), true)
+  return Auctionary.Compat.GetMoneyString(math.floor(amount), true)
 end
 
 local function IDFromLink(link)
@@ -29,7 +29,7 @@ local function Compute(index)
   for reagentIndex = 1, result.numReagents do
     local reagentID = IDFromLink(GetTradeSkillReagentItemLink(index, reagentIndex))
     local _, _, count = GetTradeSkillReagentInfo(index, reagentIndex)
-    local price = reagentID and Auctionator.CraftingInfo.GetReagentPrice(reagentID)
+    local price = reagentID and Auctionary.CraftingInfo.GetReagentPrice(reagentID)
     if price ~= nil and count ~= nil then
       result.cost = result.cost + price * count
     else
@@ -38,13 +38,13 @@ local function Compute(index)
   end
   -- Enchants have no item to sell
   result.itemID = IDFromLink(GetTradeSkillItemLink(index))
-  if result.itemID ~= nil and Auctionator.Database ~= nil then
-    local price = Auctionator.Database:GetPrice(result.itemID)
+  if result.itemID ~= nil and Auctionary.Database ~= nil then
+    local price = Auctionary.Database:GetPrice(result.itemID)
     if price ~= nil then
       local minMade, maxMade = GetTradeSkillNumMade(index)
       local made = math.max(((minMade or 1) + (maxMade or minMade or 1)) / 2, 1)
       result.auction = price * made
-      result.profit = price * made * Auctionator.Constants.AfterAHCut - result.cost
+      result.profit = price * made * Auctionary.Constants.AfterAHCut - result.cost
     end
   end
   return result
@@ -67,17 +67,17 @@ local function GetSelectedRecipeText()
     return nil
   end
 
-  local Options = Auctionator.Config.Options
+  local Options = Auctionary.Config.Options
   local lines = {}
   local costText = Money(recipe.cost)
   if recipe.missing > 0 then
     costText = costText .. " + ?"
   end
-  if Auctionator.Config.Get(Options.CRAFTING_INFO_SHOW_COST) then
+  if Auctionary.Config.Get(Options.CRAFTING_INFO_SHOW_COST) then
     table.insert(lines, "|cffffd100Mats Cost:|r " .. costText)
   end
 
-  if recipe.itemID ~= nil and Auctionator.Database ~= nil and Auctionator.Config.Get(Options.CRAFTING_INFO_SHOW_PROFIT) then
+  if recipe.itemID ~= nil and Auctionary.Database ~= nil and Auctionary.Config.Get(Options.CRAFTING_INFO_SHOW_PROFIT) then
     if recipe.auction ~= nil then
       local profitText = ProfitText(recipe.profit)
       if recipe.missing > 0 then
@@ -109,7 +109,7 @@ local HIDE_ICON = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:14:14:0:0|t"
 
 -- Recipes hidden with the red x, per profession: SavedState.HiddenRecipes[profession][name]
 local function HiddenRecipes(profession)
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   if state == nil then
     return {}
   end
@@ -124,13 +124,13 @@ local profitDialog
 
 local function ShowProfitList()
   if profitDialog == nil then
-    local number = Auctionator.Utilities.NumberComparator
-    profitDialog = Auctionator.Components.CreateDialog("AuctionaryProfitDialog", 600, 420, "")
-    profitDialog.provider = Auctionator.Components.CreateDataProvider({
+    local number = Auctionary.Utilities.NumberComparator
+    profitDialog = Auctionary.Components.CreateDialog("AuctionaryfitDialog", 600, 420, "")
+    profitDialog.provider = Auctionary.Components.CreateDataProvider({
       layout = PROFIT_LAYOUT,
-      comparators = { name = Auctionator.Utilities.StringComparator, cost = number, auction = number, profit = number },
+      comparators = { name = Auctionary.Utilities.StringComparator, cost = number, auction = number, profit = number },
     })
-    profitDialog.listing = Auctionator.Components.CreateResultsListing(profitDialog, profitDialog.provider, {
+    profitDialog.listing = Auctionary.Components.CreateResultsListing(profitDialog, profitDialog.provider, {
       emptyText = "No recipes with reagents in the list of the profession window.",
       onRowClick = function(rowData, _, row)
         -- The red x at the right end of the row hides the recipe
@@ -158,13 +158,13 @@ local function ShowProfitList()
     profitDialog.listing:SetPoint("BOTTOMRIGHT", profitDialog, "BOTTOMRIGHT", -14, 40)
     profitDialog.summary = profitDialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     profitDialog.summary:SetPoint("BOTTOMLEFT", profitDialog, "BOTTOMLEFT", 16, 18)
-    profitDialog.showHiddenButton = CreateFrame("Button", "AuctionaryProfitShowHidden", profitDialog, "UIPanelButtonTemplate")
+    profitDialog.showHiddenButton = CreateFrame("Button", "AuctionaryfitShowHidden", profitDialog, "UIPanelButtonTemplate")
     profitDialog.showHiddenButton:SetWidth(110)
     profitDialog.showHiddenButton:SetHeight(22)
     profitDialog.showHiddenButton:SetPoint("RIGHT", profitDialog.closeButton, "LEFT", -6, 0)
     profitDialog.showHiddenButton:SetText("Show Hidden")
     profitDialog.showHiddenButton:SetScript("OnClick", function()
-      local state = Auctionator.SavedState
+      local state = Auctionary.SavedState
       if state ~= nil and state.HiddenRecipes ~= nil then
         state.HiddenRecipes[profitDialog.profession] = nil
       end
@@ -217,7 +217,7 @@ local function ShowProfitList()
   dialog:Show()
   -- Filled after the list is visible (see the history window)
   dialog.provider:SetEntries(entries)
-  Auctionator.Compat.After(0.05, function()
+  Auctionary.Compat.After(0.05, function()
     if dialog.listing:IsVisible() then
       dialog.listing:Refresh()
     end
@@ -228,7 +228,7 @@ local function Update()
   if text == nil or TradeSkillFrame == nil or not TradeSkillFrame:IsShown() then
     return
   end
-  if not Auctionator.Config.Get(Auctionator.Config.Options.CRAFTING_INFO_SHOW) then
+  if not Auctionary.Config.Get(Auctionary.Config.Options.CRAFTING_INFO_SHOW) then
     text:Hide()
     return
   end
@@ -257,7 +257,7 @@ local function Setup()
   text:Hide()
 
   -- Just below the window, so it cannot cover anything in it
-  local button = CreateFrame("Button", "AuctionaryProfitListButton", TradeSkillFrame, "UIPanelButtonTemplate")
+  local button = CreateFrame("Button", "AuctionaryfitListButton", TradeSkillFrame, "UIPanelButtonTemplate")
   button:SetWidth(90)
   button:SetHeight(20)
   button:SetPoint("TOPLEFT", TradeSkillFrame, "BOTTOMLEFT", 20, 74)
@@ -298,8 +298,13 @@ local function PlaceBesideAuctionHouse()
   end
   TradeSkillFrame:SetMovable(true)
   TradeSkillFrame:SetClampedToScreen(true)
-  if not TradeSkillFrame.auctionatorModernDrag then
-    TradeSkillFrame.auctionatorModernDrag = true
+  if not TradeSkillFrame.auctionaryDrag then
+    TradeSkillFrame.auctionaryDrag = true
+    TradeSkillFrame:HookScript("OnHide", function()
+      Auctionary.Compat.After(0, function()
+        pcall(Auctionary.CraftingInfo.ReleaseStuckPanel)
+      end)
+    end)
     TradeSkillFrame:EnableMouse(true)
     TradeSkillFrame:RegisterForDrag("LeftButton")
     TradeSkillFrame:HookScript("OnDragStart", function(window)
@@ -349,13 +354,31 @@ local function AuctionHouseOpened()
   end
 end
 
+-- The client keeps a list of which window sits on the left, in the middle
+-- and so on. A window that was hidden while it was not managed by the client
+-- (while the auction house was open) can stay in that list although it is
+-- closed. Escape then keeps "closing" that invisible window and the game menu
+-- never opens. Hiding it the client's way takes it out of the list again.
+local PANEL_AREAS = { "left", "center", "right", "doublewide", "fullscreen" }
+local function ReleaseStuckPanel()
+  if auctionOpen or TradeSkillFrame == nil or GetUIPanel == nil or HideUIPanel == nil then
+    return
+  end
+  if TradeSkillFrame:IsShown() or UIPanelWindows == nil or UIPanelWindows["TradeSkillFrame"] == nil then
+    return
+  end
+  for _, area in ipairs(PANEL_AREAS) do
+    if GetUIPanel(area) == TradeSkillFrame then
+      HideUIPanel(TradeSkillFrame)
+      return
+    end
+  end
+end
+Auctionary.CraftingInfo.ReleaseStuckPanel = ReleaseStuckPanel
+
 local function AuctionHouseClosed()
   auctionOpen = false
   if savedPanelInfo ~= nil and UIPanelWindows ~= nil then
-    -- Closed first, so the client's panel management starts clean
-    if TradeSkillFrame ~= nil and TradeSkillFrame:IsShown() then
-      TradeSkillFrame:Hide()
-    end
     UIPanelWindows["TradeSkillFrame"] = savedPanelInfo
     savedPanelInfo = nil
   end
@@ -372,6 +395,12 @@ local function AuctionHouseClosed()
     TradeSkillFrame:SetAttribute("UIPanelLayout-defined", true)
   end
   wasDefined = nil
+  -- Closed together with the auction house, the client's way, so the
+  -- client's panel list starts clean
+  if TradeSkillFrame ~= nil and TradeSkillFrame:IsShown() and HideUIPanel ~= nil then
+    HideUIPanel(TradeSkillFrame)
+  end
+  ReleaseStuckPanel()
 end
 
 local frame = CreateFrame("Frame")

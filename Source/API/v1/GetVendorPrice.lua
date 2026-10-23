@@ -1,32 +1,32 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.API.v1.GetVendorPriceByItemID(callerID, itemID)
-  Auctionator.API.InternalVerifyID(callerID)
+function Auctionary.API.v1.GetVendorPriceByItemID(callerID, itemID)
+  Auctionary.API.InternalVerifyID(callerID)
 
   if type(itemID) ~= "number" then
-    Auctionator.API.ComposeError(
+    Auctionary.API.ComposeError(
       callerID,
-      "Usage Auctionator.API.v1.GetVendorPriceByItemID(string, number)"
+      "Usage Auctionary.API.v1.GetVendorPriceByItemID(string, number)"
     )
   end
 
   return (AUCTIONARY_VENDOR_PRICE_CACHE or {})[tostring(itemID)]
 end
 
-function Auctionator.API.v1.GetVendorPriceByItemLink(callerID, itemLink)
-  Auctionator.API.InternalVerifyID(callerID)
+function Auctionary.API.v1.GetVendorPriceByItemLink(callerID, itemLink)
+  Auctionary.API.InternalVerifyID(callerID)
 
   if type(itemLink) ~= "string" then
-    Auctionator.API.ComposeError(
+    Auctionary.API.ComposeError(
       callerID,
-      "Usage Auctionator.API.v1.GetVendorPriceByItemLink(string, string)"
+      "Usage Auctionary.API.v1.GetVendorPriceByItemLink(string, string)"
     )
   end
 
   local dbKeys = nil
   -- Use that the callback is called immediately (and populates dbKeys) if the
   -- item info for item levels is available now.
-  Auctionator.Utilities.DBKeyFromLink(itemLink, function(dbKeysCallback)
+  Auctionary.Utilities.DBKeyFromLink(itemLink, function(dbKeysCallback)
     dbKeys = dbKeysCallback
   end)
 
@@ -37,6 +37,6 @@ function Auctionator.API.v1.GetVendorPriceByItemLink(callerID, itemLink)
       end
     end
   else
-    return (AUCTIONARY_VENDOR_PRICE_CACHE or {})[Auctionator.Utilities.BasicDBKeyFromLink(itemLink)]
+    return (AUCTIONARY_VENDOR_PRICE_CACHE or {})[Auctionary.Utilities.BasicDBKeyFromLink(itemLink)]
   end
 end

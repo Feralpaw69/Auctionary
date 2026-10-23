@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Reagents of crafted items, so that "Mats Cost" works without having to open
 -- every profession first.
@@ -12,7 +12,7 @@ local Auctionator = Auctionary
 -- scroll's name when the cost is worked out.
 --
 -- [crafted item ID] = "made:reagent*count,reagent*count|made:..." (one part per recipe)
-Auctionator.CraftingInfo.StaticRecipes = {
+Auctionary.CraftingInfo.StaticRecipes = {
 ["118"]="1:2447*1,765*1,3371*1",
 ["724"]="1:723*1,2678*1",
 ["733"]="5:729*1,730*1,731*1",

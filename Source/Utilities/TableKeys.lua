@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.TableKeys(original)
+function Auctionary.Utilities.TableKeys(original)
   local keys = {}
   for key, _ in pairs(original) do
     table.insert(keys, key)

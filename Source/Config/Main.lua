@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Config.Options = {
+Auctionary.Config.Options = {
   DEBUG = "debug",
   NO_PRICE_DATABASE = "no_price_database",
   MAILBOX_TOOLTIPS = "mailbox_tooltips",
@@ -62,12 +62,12 @@ Auctionator.Config.Options = {
   SHOPPING_LAST_CONTAINER_VIEW = "shopping_last_container_view",
 }
 
-Auctionator.Config.SalesTypes = {
+Auctionary.Config.SalesTypes = {
   PERCENTAGE = "percentage",
   STATIC = "static"
 }
 
-Auctionator.Config.Shortcuts = {
+Auctionary.Config.Shortcuts = {
   LEFT_CLICK = "left click",
   RIGHT_CLICK = "right click",
   ALT_LEFT_CLICK = "alt left click",
@@ -77,67 +77,67 @@ Auctionator.Config.Shortcuts = {
   NONE = "none",
 }
 
-Auctionator.Config.Defaults = {
-  [Auctionator.Config.Options.DEBUG] = false,
-  [Auctionator.Config.Options.NO_PRICE_DATABASE] = false,
-  [Auctionator.Config.Options.MAILBOX_TOOLTIPS] = true,
-  [Auctionator.Config.Options.VENDOR_TOOLTIPS] = true,
-  [Auctionator.Config.Options.AUCTION_TOOLTIPS] = true,
-  [Auctionator.Config.Options.AUCTION_AGE_TOOLTIPS] = false,
-  [Auctionator.Config.Options.AUCTION_MEAN_TOOLTIPS] = false,
-  [Auctionator.Config.Options.AUCTION_MEAN_DAYS_LIMIT] = 21,
-  [Auctionator.Config.Options.SHIFT_STACK_TOOLTIPS] = true,
-  [Auctionator.Config.Options.ENCHANT_TOOLTIPS] = false,
-  [Auctionator.Config.Options.REPLICATE_SCAN] = false,
-  [Auctionator.Config.Options.AUTO_LIST_SEARCH] = true,
-  [Auctionator.Config.Options.DEFAULT_LIST] = Auctionator.Constants.NO_LIST,
-  [Auctionator.Config.Options.AUCTION_CHAT_LOG] = true,
-  [Auctionator.Config.Options.SELLING_BAG_COLLAPSED] = false,
-  [Auctionator.Config.Options.SHOW_SELLING_BAG] = true,
-  [Auctionator.Config.Options.SELLING_BAG_SELECT_SHORTCUT] = Auctionator.Config.Shortcuts.ALT_LEFT_CLICK,
-  [Auctionator.Config.Options.SELLING_ICON_SIZE] = 42,
-  [Auctionator.Config.Options.SELLING_IGNORED_KEYS] = {},
-  [Auctionator.Config.Options.SELLING_FAVOURITE_KEYS] = {},
-  [Auctionator.Config.Options.SELLING_AUTO_SELECT_NEXT] = false,
-  [Auctionator.Config.Options.SELLING_MISSING_FAVOURITES] = true,
-  [Auctionator.Config.Options.SELLING_FAVOURITES_SORT_OWNED] = false,
-  [Auctionator.Config.Options.SELLING_POST_SHORTCUT] = "SPACE",
-  [Auctionator.Config.Options.SELLING_SKIP_SHORTCUT] = "SHIFT-SPACE",
-  [Auctionator.Config.Options.SELLING_PREV_SHORTCUT] = "BACKSPACE",
-  [Auctionator.Config.Options.SHOW_SELLING_BID_PRICE] = false,
-  [Auctionator.Config.Options.SELLING_CONFIRM_LOW_PRICE] = true,
-  [Auctionator.Config.Options.SAVE_LAST_DURATION_AS_DEFAULT] = false,
+Auctionary.Config.Defaults = {
+  [Auctionary.Config.Options.DEBUG] = false,
+  [Auctionary.Config.Options.NO_PRICE_DATABASE] = false,
+  [Auctionary.Config.Options.MAILBOX_TOOLTIPS] = true,
+  [Auctionary.Config.Options.VENDOR_TOOLTIPS] = true,
+  [Auctionary.Config.Options.AUCTION_TOOLTIPS] = true,
+  [Auctionary.Config.Options.AUCTION_AGE_TOOLTIPS] = false,
+  [Auctionary.Config.Options.AUCTION_MEAN_TOOLTIPS] = false,
+  [Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT] = 21,
+  [Auctionary.Config.Options.SHIFT_STACK_TOOLTIPS] = true,
+  [Auctionary.Config.Options.ENCHANT_TOOLTIPS] = false,
+  [Auctionary.Config.Options.REPLICATE_SCAN] = false,
+  [Auctionary.Config.Options.AUTO_LIST_SEARCH] = true,
+  [Auctionary.Config.Options.DEFAULT_LIST] = Auctionary.Constants.NO_LIST,
+  [Auctionary.Config.Options.AUCTION_CHAT_LOG] = true,
+  [Auctionary.Config.Options.SELLING_BAG_COLLAPSED] = false,
+  [Auctionary.Config.Options.SHOW_SELLING_BAG] = true,
+  [Auctionary.Config.Options.SELLING_BAG_SELECT_SHORTCUT] = Auctionary.Config.Shortcuts.ALT_LEFT_CLICK,
+  [Auctionary.Config.Options.SELLING_ICON_SIZE] = 42,
+  [Auctionary.Config.Options.SELLING_IGNORED_KEYS] = {},
+  [Auctionary.Config.Options.SELLING_FAVOURITE_KEYS] = {},
+  [Auctionary.Config.Options.SELLING_AUTO_SELECT_NEXT] = false,
+  [Auctionary.Config.Options.SELLING_MISSING_FAVOURITES] = true,
+  [Auctionary.Config.Options.SELLING_FAVOURITES_SORT_OWNED] = false,
+  [Auctionary.Config.Options.SELLING_POST_SHORTCUT] = "SPACE",
+  [Auctionary.Config.Options.SELLING_SKIP_SHORTCUT] = "SHIFT-SPACE",
+  [Auctionary.Config.Options.SELLING_PREV_SHORTCUT] = "BACKSPACE",
+  [Auctionary.Config.Options.SHOW_SELLING_BID_PRICE] = false,
+  [Auctionary.Config.Options.SELLING_CONFIRM_LOW_PRICE] = true,
+  [Auctionary.Config.Options.SAVE_LAST_DURATION_AS_DEFAULT] = false,
 
-  [Auctionator.Config.Options.GEAR_PRICE_MULTIPLIER] = 0,
+  [Auctionary.Config.Options.GEAR_PRICE_MULTIPLIER] = 0,
 
-  [Auctionator.Config.Options.PRICE_HISTORY_DAYS] = 21,
-  [Auctionator.Config.Options.POSTING_HISTORY_LENGTH] = 10,
+  [Auctionary.Config.Options.PRICE_HISTORY_DAYS] = 21,
+  [Auctionary.Config.Options.POSTING_HISTORY_LENGTH] = 10,
 
-  [Auctionator.Config.Options.SPLASH_SCREEN_VERSION] = "anything",
-  [Auctionator.Config.Options.HIDE_SPLASH_SCREEN] = false,
+  [Auctionary.Config.Options.SPLASH_SCREEN_VERSION] = "anything",
+  [Auctionary.Config.Options.HIDE_SPLASH_SCREEN] = false,
 
-  [Auctionator.Config.Options.CANCEL_UNDERCUT_SHORTCUT] = "SPACE",
-  [Auctionator.Config.Options.UNDERCUT_ITEMS_AHEAD] = 0,
+  [Auctionary.Config.Options.CANCEL_UNDERCUT_SHORTCUT] = "SPACE",
+  [Auctionary.Config.Options.UNDERCUT_ITEMS_AHEAD] = 0,
 
-  [Auctionator.Config.Options.DEFAULT_TAB] = 0,
+  [Auctionary.Config.Options.DEFAULT_TAB] = 0,
 
-  [Auctionator.Config.Options.COLUMNS_SHOPPING] = {},
-  [Auctionator.Config.Options.COLUMNS_SHOPPING_HISTORICAL_PRICES] = {},
-  [Auctionator.Config.Options.COLUMNS_CANCELLING] = {},
-  [Auctionator.Config.Options.COLUMNS_SELLING_SEARCH] = {},
-  [Auctionator.Config.Options.COLUMNS_HISTORICAL_PRICES] = {},
-  [Auctionator.Config.Options.COLUMNS_POSTING_HISTORY] = {},
+  [Auctionary.Config.Options.COLUMNS_SHOPPING] = {},
+  [Auctionary.Config.Options.COLUMNS_SHOPPING_HISTORICAL_PRICES] = {},
+  [Auctionary.Config.Options.COLUMNS_CANCELLING] = {},
+  [Auctionary.Config.Options.COLUMNS_SELLING_SEARCH] = {},
+  [Auctionary.Config.Options.COLUMNS_HISTORICAL_PRICES] = {},
+  [Auctionary.Config.Options.COLUMNS_POSTING_HISTORY] = {},
 
-  [Auctionator.Config.Options.CRAFTING_INFO_SHOW] = true,
-  [Auctionator.Config.Options.CRAFTING_INFO_SHOW_PROFIT] = true,
-  [Auctionator.Config.Options.CRAFTING_INFO_SHOW_COST] = true,
+  [Auctionary.Config.Options.CRAFTING_INFO_SHOW] = true,
+  [Auctionary.Config.Options.CRAFTING_INFO_SHOW_PROFIT] = true,
+  [Auctionary.Config.Options.CRAFTING_INFO_SHOW_COST] = true,
 
-  [Auctionator.Config.Options.SHOPPING_LIST_MISSING_TERMS] = false,
-  [Auctionator.Config.Options.SHOPPING_LAST_CONTAINER_VIEW] = Auctionator.Constants.ShoppingListViews.Lists,
+  [Auctionary.Config.Options.SHOPPING_LIST_MISSING_TERMS] = false,
+  [Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW] = Auctionary.Constants.ShoppingListViews.Lists,
 }
 
-function Auctionator.Config.IsValidOption(name)
-  for _, option in pairs(Auctionator.Config.Options) do
+function Auctionary.Config.IsValidOption(name)
+  for _, option in pairs(Auctionary.Config.Options) do
     if option == name then
       return true
     end
@@ -145,10 +145,10 @@ function Auctionator.Config.IsValidOption(name)
   return false
 end
 
-function Auctionator.Config.Create(constant, name, defaultValue)
-  Auctionator.Config.Options[constant] = name
+function Auctionary.Config.Create(constant, name, defaultValue)
+  Auctionary.Config.Options[constant] = name
 
-  Auctionator.Config.Defaults[Auctionator.Config.Options[constant]] = defaultValue
+  Auctionary.Config.Defaults[Auctionary.Config.Options[constant]] = defaultValue
 
   if AUCTIONARY_CONFIG ~= nil and AUCTIONARY_CONFIG[name] == nil then
     AUCTIONARY_CONFIG[name] = defaultValue
@@ -158,10 +158,10 @@ function Auctionator.Config.Create(constant, name, defaultValue)
   end
 end
 
-function Auctionator.Config.Set(name, value)
+function Auctionary.Config.Set(name, value)
   if AUCTIONARY_CONFIG == nil then
     error("AUCTIONARY_CONFIG not initialized")
-  elseif not Auctionator.Config.IsValidOption(name) then
+  elseif not Auctionary.Config.IsValidOption(name) then
     error("Invalid option '" .. name .. "'")
   elseif AUCTIONARY_CHARACTER_CONFIG ~= nil then
     AUCTIONARY_CHARACTER_CONFIG[name] = value
@@ -170,46 +170,46 @@ function Auctionator.Config.Set(name, value)
   end
 end
 
-function Auctionator.Config.SetCharacterConfig(enabled)
+function Auctionary.Config.SetCharacterConfig(enabled)
   if enabled then
     if AUCTIONARY_CHARACTER_CONFIG == nil then
       AUCTIONARY_CHARACTER_CONFIG = {}
     end
 
-    Auctionator.Config.InitializeCharacterConfig()
+    Auctionary.Config.InitializeCharacterConfig()
   else
     AUCTIONARY_CHARACTER_CONFIG = nil
   end
 end
 
-function Auctionator.Config.IsCharacterConfig()
+function Auctionary.Config.IsCharacterConfig()
   return AUCTIONARY_CHARACTER_CONFIG ~= nil
 end
 
-function Auctionator.Config.Reset()
+function Auctionary.Config.Reset()
   AUCTIONARY_CONFIG = {}
   AUCTIONARY_CHARACTER_CONFIG = nil
-  for option, value in pairs(Auctionator.Config.Defaults) do
+  for option, value in pairs(Auctionary.Config.Defaults) do
     AUCTIONARY_CONFIG[option] = value
   end
 end
 
-function Auctionator.Config.InitializeData()
+function Auctionary.Config.InitializeData()
   if AUCTIONARY_CONFIG == nil then
-    Auctionator.Config.Reset()
+    Auctionary.Config.Reset()
   else
-    for option, value in pairs(Auctionator.Config.Defaults) do
+    for option, value in pairs(Auctionary.Config.Defaults) do
       if AUCTIONARY_CONFIG[option] == nil then
-        Auctionator.Debug.Message("Setting default config for "..option)
+        Auctionary.Debug.Message("Setting default config for "..option)
         AUCTIONARY_CONFIG[option] = value
       end
     end
-    Auctionator.Config.InitializeCharacterConfig()
+    Auctionary.Config.InitializeCharacterConfig()
   end
 end
 
-function Auctionator.Config.InitializeCharacterConfig()
-  if Auctionator.Config.IsCharacterConfig() then
+function Auctionary.Config.InitializeCharacterConfig()
+  if Auctionary.Config.IsCharacterConfig() then
     for key, value in pairs(AUCTIONARY_CONFIG) do
       if AUCTIONARY_CHARACTER_CONFIG[key] == nil then
         AUCTIONARY_CHARACTER_CONFIG[key] = value
@@ -218,10 +218,10 @@ function Auctionator.Config.InitializeCharacterConfig()
   end
 end
 
-function Auctionator.Config.Get(name)
+function Auctionary.Config.Get(name)
   -- This is ONLY if a config is asked for before variables are loaded
   if AUCTIONARY_CONFIG == nil then
-    return Auctionator.Config.Defaults[name]
+    return Auctionary.Config.Defaults[name]
   elseif AUCTIONARY_CHARACTER_CONFIG ~= nil then
     return AUCTIONARY_CHARACTER_CONFIG[name]
   else

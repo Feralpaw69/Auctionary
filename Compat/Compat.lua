@@ -2,10 +2,10 @@
 -- Everything lives inside the Auctionary namespace: no missing modern
 -- globals (Mixin, C_Timer, ...) are created, so other addons that feature-detect
 -- them are not affected.
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Compat = {}
-local Compat = Auctionator.Compat
+Auctionary.Compat = {}
+local Compat = Auctionary.Compat
 
 ---------------------------------------------------------------------------
 -- Mixins

@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Components.Events = {
+Auctionary.Components.Events = {
   EnterPressed = "components_enter_pressed",
 }

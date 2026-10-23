@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.FullScan.Events = {
+Auctionary.FullScan.Events = {
   ScanStart = "replicate_scan_start",
   ScanProgress = "replicate_scan_progress",
   ScanComplete = "replicate_scan_complete",

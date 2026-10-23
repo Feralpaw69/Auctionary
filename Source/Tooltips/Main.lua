@@ -1,29 +1,98 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-local L = Auctionator.Locales.Apply
-local WHITE = Auctionator.Compat.Colors.WHITE_FONT_COLOR
+local L = Auctionary.Locales.Apply
+local WHITE = Auctionary.Compat.Colors.WHITE_FONT_COLOR
 
--- Auctionator.Config.Options.VENDOR_TOOLTIPS: true if should show vendor tips
--- Auctionator.Config.Options.SHIFT_STACK_TOOLTIPS: true to show stack price when [shift] is down
--- Auctionator.Config.Options.AUCTION_TOOLTIPS: true if should show auction tips
-function Auctionator.Tooltip.ShowTipWithPricing(tooltipFrame, itemLink, itemCount)
-  if Auctionator.Database == nil or itemLink == nil then
+-- Auctionary.Config.Options.VENDOR_TOOLTIPS: true if should show vendor tips
+-- Auctionary.Config.Options.SHIFT_STACK_TOOLTIPS: true to show stack price when [shift] is down
+-- Auctionary.Config.Options.AUCTION_TOOLTIPS: true if should show auction tips
+-- The client fills the tooltip of a bag item or a link again several times a
+-- second while the mouse rests on it. The price lines are worked out once and
+-- then only written again for a moment, until something could have changed.
+local REUSE_SECONDS = 1
+local recent = {}
+
+-- The lines added by compute, read back from the tooltip itself (the
+-- tooltip's methods are left alone)
+local function Recorded(tooltipFrame, compute)
+  local name = tooltipFrame:GetName()
+  local before = tooltipFrame:NumLines()
+  compute()
+  local lines = {}
+  if name == nil then
+    return lines, false
+  end
+  for index = before + 1, tooltipFrame:NumLines() do
+    local left, right = _G[name .. "TextLeft" .. index], _G[name .. "TextRight" .. index]
+    if left == nil then
+      return lines, false
+    end
+    local lr, lg, lb = left:GetTextColor()
+    if right ~= nil and right:IsShown() and (right:GetText() or "") ~= "" then
+      local rr, rg, rb = right:GetTextColor()
+      table.insert(lines, { true, left:GetText() or "", right:GetText(), lr, lg, lb, rr, rg, rb })
+    else
+      table.insert(lines, { false, left:GetText() or "", lr, lg, lb })
+    end
+  end
+  return lines, true
+end
+
+function Auctionary.Tooltip.ShowTipWithPricing(tooltipFrame, itemLink, itemCount)
+  if Auctionary.Database == nil or itemLink == nil then
     return
   end
+
+  local key = itemLink .. "|" .. tostring(itemCount) .. "|" .. (IsShiftKeyDown() and "s" or "")
+    .. (IsControlKeyDown() and "c" or "") .. "|" .. tostring(Auctionary.Database.revision)
+  local now = GetTime()
+  local last = recent[tooltipFrame]
+  if last ~= nil and last.key == key and now - last.time < REUSE_SECONDS then
+    for _, line in ipairs(last.lines) do
+      if line[1] then
+        tooltipFrame:AddDoubleLine(line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9])
+      else
+        tooltipFrame:AddLine(line[2], line[3], line[4], line[5])
+      end
+    end
+    if #last.lines > 0 then
+      tooltipFrame:Show()
+    end
+    return
+  end
+
+  local done = false
+  local lines, readable = Recorded(tooltipFrame, function()
+    Auctionary.Tooltip.ShowTipWithPricingNow(tooltipFrame, itemLink, itemCount, function()
+      done = true
+    end)
+  end)
+  -- Only when everything was known right away (no item data still loading)
+  if done and readable then
+    recent[tooltipFrame] = { key = key, time = now, lines = lines }
+  else
+    recent[tooltipFrame] = nil
+  end
+end
+
+function Auctionary.Tooltip.ShowTipWithPricingNow(tooltipFrame, itemLink, itemCount, onDone)
 
   -- Not cached items are skipped: the tooltip would be gone (or showing
   -- something else) by the time the item data arrives
-  local basicKey = Auctionator.Utilities.BasicDBKeyFromLink(itemLink)
-  if basicKey == nil or not Auctionator.Compat.IsItemCached(basicKey) then
+  local basicKey = Auctionary.Utilities.BasicDBKeyFromLink(itemLink)
+  if basicKey == nil or not Auctionary.Compat.IsItemCached(basicKey) then
     return
   end
 
-  Auctionator.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
-    Auctionator.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemLink, itemCount)
+  Auctionary.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
+    Auctionary.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemLink, itemCount)
+    if onDone ~= nil then
+      onDone()
+    end
   end)
 end
 
-function Auctionator.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemLink, itemCount)
+function Auctionary.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemLink, itemCount)
   if #dbKeys == 0 then
     return
   end
@@ -33,30 +102,30 @@ function Auctionator.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemL
   end
 
   local showStackPrices = IsShiftKeyDown()
-  if not Auctionator.Config.Get(Auctionator.Config.Options.SHIFT_STACK_TOOLTIPS) then
+  if not Auctionary.Config.Get(Auctionary.Config.Options.SHIFT_STACK_TOOLTIPS) then
     showStackPrices = not IsShiftKeyDown()
   end
   local multiplier = showStackPrices and itemCount or 1
 
   local countString = ""
   if showStackPrices and itemCount > 1 then
-    countString = Auctionator.Utilities.CreateCountString(itemCount)
+    countString = Auctionary.Utilities.CreateCountString(itemCount)
   end
 
-  local auctionPrice = Auctionator.Database:GetFirstPrice(dbKeys)
+  local auctionPrice = Auctionary.Database:GetFirstPrice(dbKeys)
   local auctionAge, showAgeUnknown = nil, false
   if auctionPrice ~= nil then
     auctionPrice = auctionPrice * multiplier
-    auctionAge = Auctionator.Database:GetPriceAge(dbKeys[1])
+    auctionAge = Auctionary.Database:GetPriceAge(dbKeys[1])
     if auctionAge == nil then
-      showAgeUnknown = Auctionator.Database:GetPrice(dbKeys[1]) ~= nil
+      showAgeUnknown = Auctionary.Database:GetPrice(dbKeys[1]) ~= nil
     end
   end
 
   local auctionMean
-  if Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_TOOLTIPS) then
-    auctionMean = Auctionator.Database:GetScanAverage(
-      dbKeys[1], Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
+  if Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_TOOLTIPS) then
+    auctionMean = Auctionary.Database:GetScanAverage(
+      dbKeys[1], Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
     )
     if auctionMean ~= nil then
       auctionMean = auctionMean * multiplier
@@ -67,35 +136,35 @@ function Auctionator.Tooltip.ShowTipWithPricingDBKey(tooltipFrame, dbKeys, itemL
   local cannotAuction = false
   local itemInfo = { GetItemInfo(itemLink) }
   if #itemInfo ~= 0 then
-    cannotAuction = Auctionator.Utilities.IsBound(itemLink)
-    if Auctionator.Utilities.IsVendorable(itemInfo) then
-      vendorPrice = itemInfo[Auctionator.Constants.ITEM_INFO.SELL_PRICE] * multiplier
+    cannotAuction = Auctionary.Utilities.IsBound(itemLink)
+    if Auctionary.Utilities.IsVendorable(itemInfo) then
+      vendorPrice = itemInfo[Auctionary.Constants.ITEM_INFO.SELL_PRICE] * multiplier
     end
   end
 
-  if Auctionator.Debug.IsOn() then
+  if Auctionary.Debug.IsOn() then
     tooltipFrame:AddDoubleLine("DBKey", dbKeys[1])
   end
 
   if vendorPrice ~= nil then
-    Auctionator.Tooltip.AddVendorTip(tooltipFrame, vendorPrice, countString)
+    Auctionary.Tooltip.AddVendorTip(tooltipFrame, vendorPrice, countString)
   end
-  Auctionator.Tooltip.AddAuctionTip(tooltipFrame, auctionPrice, countString, cannotAuction)
+  Auctionary.Tooltip.AddAuctionTip(tooltipFrame, auctionPrice, countString, cannotAuction)
   if not cannotAuction then
-    Auctionator.Tooltip.AddAuctionMeanTip(tooltipFrame, auctionMean, countString)
-    Auctionator.Tooltip.AddAuctionAgeTip(tooltipFrame, auctionAge, auctionPrice, showAgeUnknown)
+    Auctionary.Tooltip.AddAuctionMeanTip(tooltipFrame, auctionMean, countString)
+    Auctionary.Tooltip.AddAuctionAgeTip(tooltipFrame, auctionAge, auctionPrice, showAgeUnknown)
   end
 
-  Auctionator.Tooltip.AddMatsCostTip(tooltipFrame, dbKeys[#dbKeys], countString, multiplier)
-  Auctionator.Tooltip.AddReagentTips(tooltipFrame, itemLink, dbKeys[#dbKeys], countString, multiplier,
-    Auctionator.Database:GetFirstPrice(dbKeys))
-  pcall(Auctionator.Tooltip.AddOwnedTip, tooltipFrame, itemLink)
+  Auctionary.Tooltip.AddMatsCostTip(tooltipFrame, dbKeys[#dbKeys], countString, multiplier)
+  Auctionary.Tooltip.AddReagentTips(tooltipFrame, itemLink, dbKeys[#dbKeys], countString, multiplier,
+    Auctionary.Database:GetFirstPrice(dbKeys))
+  pcall(Auctionary.Tooltip.AddOwnedTip, tooltipFrame, itemLink)
 
   tooltipFrame:Show()
 end
 
 local function ValueText(value, missing)
-  local text = Auctionator.Utilities.CreatePaddedMoneyString(value)
+  local text = Auctionary.Utilities.CreatePaddedMoneyString(value)
   if missing then
     text = text .. " + ?"
   end
@@ -115,12 +184,12 @@ end
 
 -- What the item brings when disenchanted, prospected or milled
 -- unitBuyPrice is the current auction price of one item, if known
-function Auctionator.Tooltip.AddReagentTips(tooltipFrame, itemLink, itemID, countString, multiplier, unitBuyPrice)
-  local Options = Auctionator.Config.Options
-  if Auctionator.Config.Get(Options.DISENCHANT_TOOLTIPS) then
+function Auctionary.Tooltip.AddReagentTips(tooltipFrame, itemLink, itemID, countString, multiplier, unitBuyPrice)
+  local Options = Auctionary.Config.Options
+  if Auctionary.Config.Get(Options.DISENCHANT_TOOLTIPS) then
     -- The tooltip itself may say that the item cannot be disenchanted
-    Auctionator.Enchant.LearnFromTooltip(tooltipFrame, itemLink)
-    local value, missing = Auctionator.Enchant.GetDisenchantAuctionPrice(itemLink)
+    Auctionary.Enchant.LearnFromTooltip(tooltipFrame, itemLink)
+    local value, missing = Auctionary.Enchant.GetDisenchantAuctionPrice(itemLink)
     if value ~= nil then
       if value == 0 and missing then
         tooltipFrame:AddDoubleLine("Disenchant", WHITE:WrapTextInColorCode(L("UNKNOWN") .. "  "))
@@ -128,20 +197,20 @@ function Auctionator.Tooltip.AddReagentTips(tooltipFrame, itemLink, itemID, coun
         tooltipFrame:AddDoubleLine("Disenchant", ValueText(value, missing) .. PercentText(value, missing, unitBuyPrice))
       end
       if IsShiftKeyDown() then
-        for _, line in ipairs(Auctionator.Enchant.GetDisenchantBreakdown(itemLink)) do
+        for _, line in ipairs(Auctionary.Enchant.GetDisenchantBreakdown(itemLink)) do
           tooltipFrame:AddLine(line, 0.8, 0.8, 0.8)
         end
       end
     end
   end
-  if Auctionator.Config.Get(Options.PROSPECT_TOOLTIPS) then
-    local value, missing = Auctionator.Prospect.GetProspectAuctionPrice(itemID)
+  if Auctionary.Config.Get(Options.PROSPECT_TOOLTIPS) then
+    local value, missing = Auctionary.Prospect.GetProspectAuctionPrice(itemID)
     if value ~= nil and (value > 0 or missing) then
       tooltipFrame:AddDoubleLine("Prospect" .. countString, ValueText(value * multiplier, missing) .. PercentText(value, missing, unitBuyPrice))
     end
   end
-  if Auctionator.Config.Get(Options.MILL_TOOLTIPS) then
-    local value, missing = Auctionator.Mill.GetMillAuctionPrice(itemID)
+  if Auctionary.Config.Get(Options.MILL_TOOLTIPS) then
+    local value, missing = Auctionary.Mill.GetMillAuctionPrice(itemID)
     if value ~= nil and (value > 0 or missing) then
       tooltipFrame:AddDoubleLine("Mill" .. countString, ValueText(value * multiplier, missing) .. PercentText(value, missing, unitBuyPrice))
     end
@@ -149,11 +218,11 @@ function Auctionator.Tooltip.AddReagentTips(tooltipFrame, itemLink, itemID, coun
 end
 
 -- For crafted items whose recipe is known: what the reagents cost
-function Auctionator.Tooltip.AddMatsCostTip(tooltipFrame, itemID, countString, multiplier)
-  if not Auctionator.Config.Get(Auctionator.Config.Options.MATS_COST_TOOLTIPS) then
+function Auctionary.Tooltip.AddMatsCostTip(tooltipFrame, itemID, countString, multiplier)
+  if not Auctionary.Config.Get(Auctionary.Config.Options.MATS_COST_TOOLTIPS) then
     return
   end
-  local cost, missing, note = Auctionator.CraftingInfo.GetMatsCost(itemID)
+  local cost, missing, note = Auctionary.CraftingInfo.GetMatsCost(itemID)
   if cost == nil then
     return
   end
@@ -162,7 +231,7 @@ function Auctionator.Tooltip.AddMatsCostTip(tooltipFrame, itemID, countString, m
   if missing > 0 and cost == 0 then
     text = L("UNKNOWN") .. "  "
   else
-    text = Auctionator.Utilities.CreatePaddedMoneyString(cost * multiplier)
+    text = Auctionary.Utilities.CreatePaddedMoneyString(cost * multiplier)
     if missing > 0 then
       -- Some reagents have no known price; the real cost is higher
       text = text .. " + ?"
@@ -174,8 +243,8 @@ function Auctionator.Tooltip.AddMatsCostTip(tooltipFrame, itemID, countString, m
   end
 end
 
-function Auctionator.Tooltip.AddVendorTip(tooltipFrame, vendorPrice, countString)
-  if Auctionator.Config.Get(Auctionator.Config.Options.VENDOR_TOOLTIPS) and vendorPrice > 0 then
+function Auctionary.Tooltip.AddVendorTip(tooltipFrame, vendorPrice, countString)
+  if Auctionary.Config.Get(Auctionary.Config.Options.VENDOR_TOOLTIPS) and vendorPrice > 0 then
     -- Replaces the client's own sell price line (shown at merchants)
     if GameTooltip_ClearMoney and tooltipFrame == GameTooltip then
       GameTooltip_ClearMoney(tooltipFrame)
@@ -183,20 +252,20 @@ function Auctionator.Tooltip.AddVendorTip(tooltipFrame, vendorPrice, countString
 
     tooltipFrame:AddDoubleLine(
       L("VENDOR") .. countString,
-      WHITE:WrapTextInColorCode(Auctionator.Utilities.CreatePaddedMoneyString(vendorPrice))
+      WHITE:WrapTextInColorCode(Auctionary.Utilities.CreatePaddedMoneyString(vendorPrice))
     )
   end
 end
 
-function Auctionator.Tooltip.AddAuctionTip(tooltipFrame, auctionPrice, countString, cannotAuction)
+function Auctionary.Tooltip.AddAuctionTip(tooltipFrame, auctionPrice, countString, cannotAuction)
   if cannotAuction then
     return
   end
-  if Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_TOOLTIPS) then
+  if Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_TOOLTIPS) then
     if auctionPrice ~= nil then
       tooltipFrame:AddDoubleLine(
         L("AUCTION") .. countString,
-        WHITE:WrapTextInColorCode(Auctionator.Utilities.CreatePaddedMoneyString(auctionPrice))
+        WHITE:WrapTextInColorCode(Auctionary.Utilities.CreatePaddedMoneyString(auctionPrice))
       )
     else
       tooltipFrame:AddDoubleLine(
@@ -207,21 +276,21 @@ function Auctionator.Tooltip.AddAuctionTip(tooltipFrame, auctionPrice, countStri
   end
 end
 
-function Auctionator.Tooltip.AddAuctionMeanTip(tooltipFrame, auctionMean, countString)
-  if not Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_TOOLTIPS) then
+function Auctionary.Tooltip.AddAuctionMeanTip(tooltipFrame, auctionMean, countString)
+  if not Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_TOOLTIPS) then
     return
   end
 
   if auctionMean ~= nil then
     tooltipFrame:AddDoubleLine(
       L("AUCTION_MEAN") .. countString,
-      WHITE:WrapTextInColorCode(Auctionator.Utilities.CreatePaddedMoneyString(auctionMean))
+      WHITE:WrapTextInColorCode(Auctionary.Utilities.CreatePaddedMoneyString(auctionMean))
     )
   end
 end
 
-function Auctionator.Tooltip.AddAuctionAgeTip(tooltipFrame, auctionAge, auctionPrice, showUnknown)
-  if not Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_AGE_TOOLTIPS) then
+function Auctionary.Tooltip.AddAuctionAgeTip(tooltipFrame, auctionAge, auctionPrice, showUnknown)
+  if not Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_AGE_TOOLTIPS) then
     return
   end
 
@@ -238,11 +307,11 @@ end
 -- The original addon ships with the average price and the price age switched
 -- off. Here both start switched on; done once so later changes by the user
 -- are kept. (/aury config auction_mean_tooltips toggles it.)
-function Auctionator.Tooltip.Initialize()
-  if Auctionator.SavedState ~= nil and not Auctionator.SavedState.TooltipDefaultsApplied then
-    Auctionator.SavedState.TooltipDefaultsApplied = true
-    Auctionator.Config.Set(Auctionator.Config.Options.AUCTION_MEAN_TOOLTIPS, true)
-    Auctionator.Config.Set(Auctionator.Config.Options.AUCTION_AGE_TOOLTIPS, true)
+function Auctionary.Tooltip.Initialize()
+  if Auctionary.SavedState ~= nil and not Auctionary.SavedState.TooltipDefaultsApplied then
+    Auctionary.SavedState.TooltipDefaultsApplied = true
+    Auctionary.Config.Set(Auctionary.Config.Options.AUCTION_MEAN_TOOLTIPS, true)
+    Auctionary.Config.Set(Auctionary.Config.Options.AUCTION_AGE_TOOLTIPS, true)
   end
 end
 
@@ -251,7 +320,7 @@ end
 
 -- Items of this character: SavedState.Inventory[realm][character][itemID] = count
 local function OwnInventory()
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   local realm, character = GetRealmName(), UnitName("player")
   if state == nil or realm == nil or character == nil then
     return nil
@@ -299,23 +368,30 @@ inventoryFrame:SetScript("OnEvent", function(_, eventName)
     pcall(UpdateInventory)
   else
     -- Bag events come often (looting, fighting): one update at most every
-    -- few seconds, never during a fight
-    pending = pending or 5
-  end
-end)
-inventoryFrame:SetScript("OnUpdate", function(_, elapsed)
-  if pending ~= nil then
-    pending = pending - (elapsed or 0)
-    if pending <= 0 then
-      if InCombatLockdown ~= nil and InCombatLockdown() then
-        pending = 2
-        return
-      end
-      pending = nil
-      pcall(UpdateInventory)
+    -- few seconds, never during a fight. Only then the frame counts down.
+    if pending == nil then
+      pending = 5
+      inventoryFrame:Show()
     end
   end
 end)
+inventoryFrame:SetScript("OnUpdate", function(_, elapsed)
+  if pending == nil then
+    inventoryFrame:Hide()
+    return
+  end
+  pending = pending - (elapsed or 0)
+  if pending <= 0 then
+    if InCombatLockdown ~= nil and InCombatLockdown() then
+      pending = 2
+      return
+    end
+    pending = nil
+    inventoryFrame:Hide()
+    pcall(UpdateInventory)
+  end
+end)
+inventoryFrame:Hide()
 
 -- Shown when the account owns more than one of the item (on this realm)
 -- Altoholic shows the same information; with it enabled ours stays away
@@ -330,7 +406,7 @@ local function AltoholicActive()
   return false
 end
 
-function Auctionator.Tooltip.AddOwnedTip(tooltipFrame, itemLink)
+function Auctionary.Tooltip.AddOwnedTip(tooltipFrame, itemLink)
   if AltoholicActive() then
     return
   end

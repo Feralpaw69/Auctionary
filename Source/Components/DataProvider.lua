@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionaryDataProviderMixin = {}
 
@@ -96,11 +96,11 @@ function AuctionaryDataProviderMixin:GetColumnHideStates()
 end
 
 function AuctionaryDataProviderMixin:GetRowTemplate()
-  return "AuctionatorResultsRowTemplate"
+  return "AuctionaryResultsRowTemplate"
 end
 
 function AuctionaryDataProviderMixin:GetEntryAt(index)
-  -- Auctionator.Debug.Message("INDEX", index)
+  -- Auctionary.Debug.Message("INDEX", index)
 
   return self.cachedResults[index]
 end
@@ -142,7 +142,7 @@ function AuctionaryDataProviderMixin:SetOnResetScrollCallback(onResetScrollCallb
 end
 
 function AuctionaryDataProviderMixin:AppendEntries(entries, isLastSetOfResults)
-  Auctionator.Debug.Message("AuctionaryDataProviderMixin:AppendEntries()", #entries)
+  Auctionary.Debug.Message("AuctionaryDataProviderMixin:AppendEntries()", #entries)
 
   self.searchCompleted = isLastSetOfResults
   self.announcedCompletion = false
@@ -169,7 +169,7 @@ function AuctionaryDataProviderMixin:CheckForEntriesToProcess()
     return
   end
 
-  Auctionator.Debug.Message("AuctionaryDataProviderMixin:CheckForEntriesToProcess()")
+  Auctionary.Debug.Message("AuctionaryDataProviderMixin:CheckForEntriesToProcess()")
 
   local processCount = 0
   local entry
@@ -263,7 +263,7 @@ function AuctionaryDataProviderMixin:GetCSV(callback)
     end
 
     if finish < self:GetCount() then
-      Auctionator.Compat.After(0, function()
+      Auctionary.Compat.After(0, function()
         DoRows(finish + 1, (finish - start) + finish + 1)
       end)
     else

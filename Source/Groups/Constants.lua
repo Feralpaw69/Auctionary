@@ -1,13 +1,13 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Groups.Constants = {
+Auctionary.Groups.Constants = {
   IsWrath = true,
   IsCata = false,
   IsVanilla = false,
   IsRetail = false,
 }
 
-Auctionator.Groups.Constants.Events = {
+Auctionary.Groups.Constants.Events = {
   "BagCacheUpdated",
   "ViewGroupToggled",
   "ViewComplete",
@@ -19,15 +19,15 @@ Auctionator.Groups.Constants.Events = {
 }
 
 -- Backpack and the four bag slots (the keyring, -2, can't hold auctionable items)
-Auctionator.Groups.Constants.BagIDs = {0, 1, 2, 3, 4}
+Auctionary.Groups.Constants.BagIDs = {0, 1, 2, 3, 4}
 
-Auctionator.Groups.Constants.ValidItemClassIDs = Auctionator.Constants.ValidItemClassIDs
+Auctionary.Groups.Constants.ValidItemClassIDs = Auctionary.Constants.ValidItemClassIDs
 
-Auctionator.Groups.Constants.GroupType = {
+Auctionary.Groups.Constants.GroupType = {
   List = 1,
   ClassID = 2,
 }
 
--- Filled by Auctionator.Groups.Initialize, the class names aren't available
+-- Filled by Auctionary.Groups.Initialize, the class names aren't available
 -- until the player has logged in
-Auctionator.Groups.Constants.DefaultGroups = {}
+Auctionary.Groups.Constants.DefaultGroups = {}

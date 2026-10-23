@@ -1,5 +1,4 @@
--- Global namespace of the 3.3.5a backport. Deliberately NOT "Auctionator" so
--- the addon can run next to the original Auctionator 2.6.8.
+-- Global namespace of the addon.
 Auctionary = {
   Debug = {},
   Constants = {},

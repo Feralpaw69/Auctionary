@@ -1,30 +1,30 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 
 -- Searches every page for the query. Results arrive page by page with the
--- event Auctionator.AH.Events.ScanResultsUpdate. See Source/AH/Scan.lua for
+-- event Auctionary.AH.Events.ScanResultsUpdate. See Source/AH/Scan.lua for
 -- the format of query and results.
-function Auctionator.AH.QueryAuctionItems(query)
-  Auctionator.AH.Internals.scan:Start(query, 0, false)
+function Auctionary.AH.QueryAuctionItems(query)
+  Auctionary.AH.Internals.scan:Start(query, 0, false)
 end
 
 -- Loads one page (first page is 0) and leaves it as the client's current
--- "list" so its auctions can be bought. Answer: Auctionator.AH.Events.CurrentPage
-function Auctionator.AH.QueryAndFocusPage(query, page)
-  Auctionator.AH.Internals.scan:Start(query, page, true)
+-- "list" so its auctions can be bought. Answer: Auctionary.AH.Events.CurrentPage
+function Auctionary.AH.QueryAndFocusPage(query, page)
+  Auctionary.AH.Internals.scan:Start(query, page, true)
 end
 
-function Auctionator.AH.AbortQuery()
-  Auctionator.AH.Internals.scan:Abort()
+function Auctionary.AH.AbortQuery()
+  Auctionary.AH.Internals.scan:Abort()
 end
 
-function Auctionator.AH.IsQueryActive()
-  return Auctionator.AH.Internals.scan:IsActive()
+function Auctionary.AH.IsQueryActive()
+  return Auctionary.AH.Internals.scan:IsActive()
 end
 
 -- Reads the client's current "list", "owner" or "bidder" auctions
-function Auctionator.AH.DumpAuctions(view)
+function Auctionary.AH.DumpAuctions(view)
   local auctions = {}
   for index = 1, (GetNumAuctionItems(view)) do
     local info = { GetAuctionItemInfo(view, index) }
@@ -44,7 +44,7 @@ end
 -- Returns a function(info, itemLink) that says whether an auction is one of
 -- the player's own. The seller's name decides; while the client has not got
 -- the name yet, being identical to one of the own auctions does.
-function Auctionator.AH.GetOwnAuctionChecker()
+function Auctionary.AH.GetOwnAuctionChecker()
   local playerName = UnitName("player")
   local own = {}
   for index = 1, (GetNumAuctionItems("owner")) do
@@ -63,9 +63,9 @@ function Auctionator.AH.GetOwnAuctionChecker()
   end
 end
 
--- Answer: Auctionator.AH.Events.OwnedAuctionsUpdate
-function Auctionator.AH.QueryOwnedAuctions()
-  Auctionator.AH.Internals.owned:Query()
+-- Answer: Auctionary.AH.Events.OwnedAuctionsUpdate
+function Auctionary.AH.QueryOwnedAuctions()
+  Auctionary.AH.Internals.owned:Query()
 end
 
 local function IsSameAuction(a, b)
@@ -83,7 +83,7 @@ end
 -- The client only knows auctions by their position in the current list, and
 -- the list changes whenever something is bought, sold or cancelled. Finds the
 -- position of the given auction (as reported by a scan) in the current view.
-function Auctionator.AH.FindAuctionIndex(view, auction)
+function Auctionary.AH.FindAuctionIndex(view, auction)
   local ownerIndex = AuctionItemInfo.Owner
   local numItems = GetNumAuctionItems(view)
 
@@ -117,8 +117,8 @@ end
 
 -- Buys or bids on an auction from the current page (see QueryAndFocusPage).
 -- Returns true when the request was sent.
-function Auctionator.AH.PlaceAuctionBid(auction, amount)
-  local index = Auctionator.AH.FindAuctionIndex("list", auction)
+function Auctionary.AH.PlaceAuctionBid(auction, amount)
+  local index = Auctionary.AH.FindAuctionIndex("list", auction)
   if index == nil then
     return false
   end
@@ -126,14 +126,14 @@ function Auctionator.AH.PlaceAuctionBid(auction, amount)
   return true
 end
 
-function Auctionator.AH.IsAuctionOwned(auction)
+function Auctionary.AH.IsAuctionOwned(auction)
   return auction.info[AuctionItemInfo.Owner] == (UnitName("player"))
 end
 
 -- Cancels one of the player's own auctions (as reported by
 -- OwnedAuctionsUpdate). Returns true when the request was sent.
-function Auctionator.AH.CancelAuction(auction)
-  local index = Auctionator.AH.FindAuctionIndex("owner", auction)
+function Auctionary.AH.CancelAuction(auction)
+  local index = Auctionary.AH.FindAuctionIndex("owner", auction)
   if index == nil then
     return false
   end
@@ -144,28 +144,28 @@ end
 -- The item has to be in the auction sell slot already
 -- (ClickAuctionSellItemButton). duration is in hours (12, 24 or 48), the
 -- prices are for one stack.
-function Auctionator.AH.PostAuction(startingBid, buyoutPrice, duration, stackSize, numStacks)
+function Auctionary.AH.PostAuction(startingBid, buyoutPrice, duration, stackSize, numStacks)
   StartAuction(
     startingBid,
     buyoutPrice,
-    Auctionator.Constants.DurationToRunTime[duration],
+    Auctionary.Constants.DurationToRunTime[duration],
     stackSize,
     numStacks
   )
 end
 
 -- Event ThrottleUpdate will fire whenever the state changes
-function Auctionator.AH.IsNotThrottled()
-  return Auctionator.AH.Internals ~= nil and Auctionator.AH.Internals.throttling:IsReady()
+function Auctionary.AH.IsNotThrottled()
+  return Auctionary.AH.Internals ~= nil and Auctionary.AH.Internals.throttling:IsReady()
 end
 
 -- Whether the server currently allows downloading the whole auction house
 -- with one request (at most once every 15 minutes)
-function Auctionator.AH.CanQueryAll()
+function Auctionary.AH.CanQueryAll()
   local _, canQueryAll = CanSendAuctionQuery("list")
   return canQueryAll and true or false
 end
 
-function Auctionator.AH.GetAuctionItemSubClasses(classID)
+function Auctionary.AH.GetAuctionItemSubClasses(classID)
   return { GetAuctionItemSubClasses(classID) }
 end

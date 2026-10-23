@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.IsEquipment(classID)
-  return classID == Auctionator.Constants.ItemClass.Weapon or classID == Auctionator.Constants.ItemClass.Armor
+function Auctionary.Utilities.IsEquipment(classID)
+  return classID == Auctionary.Constants.ItemClass.Weapon or classID == Auctionary.Constants.ItemClass.Armor
 end

@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Utilities.SuffixIDToSuffixStringID = {
+Auctionary.Utilities.SuffixIDToSuffixStringID = {
 [-1284] = 1,
 [-1283] = 1,
 [-1282] = 1,
@@ -4024,7 +4024,7 @@ Auctionator.Utilities.SuffixIDToSuffixStringID = {
 [582] = 44,
 [583] = 44,
 }
-Auctionator.Utilities.SuffixStringIDTOSuffixString = {
+Auctionary.Utilities.SuffixStringIDTOSuffixString = {
 [1] = "of Agility",
 [2] = "of Arcane Resistance",
 [3] = "of Arcane Wrath",

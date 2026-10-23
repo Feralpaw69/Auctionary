@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Decides when the next request may be sent to the auction house.
 -- The 3.3.5 client has no throttle events, so CanSendAuctionQuery is polled
@@ -10,7 +10,7 @@ AuctionaryAHThrottlingFrameMixin = {}
 local QUERY_TIMEOUT = 10
 
 function AuctionaryAHThrottlingFrameMixin:OnLoad()
-  Auctionator.Debug.Message("AuctionaryAHThrottlingFrameMixin:OnLoad")
+  Auctionary.Debug.Message("AuctionaryAHThrottlingFrameMixin:OnLoad")
   self.oldReady = false
   self.waitingOnQuery = false
   self.queryTime = 0
@@ -20,7 +20,7 @@ function AuctionaryAHThrottlingFrameMixin:OnLoad()
   self:SetScript("OnEvent", self.OnEvent)
   self:SetScript("OnUpdate", self.OnUpdate)
 
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryAHThrottlingFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryAHThrottlingFrameMixin")
 end
 
 function AuctionaryAHThrottlingFrameMixin:OnEvent(eventName)
@@ -34,7 +34,7 @@ end
 
 function AuctionaryAHThrottlingFrameMixin:OnUpdate()
   if self.waitingOnQuery and GetTime() - self.queryTime > QUERY_TIMEOUT then
-    Auctionator.Debug.Message("throttling: query timed out")
+    Auctionary.Debug.Message("throttling: query timed out")
     self.waitingOnQuery = false
   end
   self:Check()
@@ -46,16 +46,16 @@ function AuctionaryAHThrottlingFrameMixin:Check()
   if self.reportNotReady then
     self.reportNotReady = false
     if not ready then
-      Auctionator.EventBus:Fire(self, Auctionator.AH.Events.ThrottleUpdate, false)
+      Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ThrottleUpdate, false)
     end
   end
 
   if self.oldReady ~= ready then
     self.oldReady = ready
     if ready then
-      Auctionator.EventBus:Fire(self, Auctionator.AH.Events.Ready)
+      Auctionary.EventBus:Fire(self, Auctionary.AH.Events.Ready)
     end
-    Auctionator.EventBus:Fire(self, Auctionator.AH.Events.ThrottleUpdate, ready)
+    Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ThrottleUpdate, ready)
   end
 end
 
@@ -69,7 +69,7 @@ function AuctionaryAHThrottlingFrameMixin:SearchQueried()
 end
 
 function AuctionaryAHThrottlingFrameMixin:IsReady()
-  if not Auctionator.State.AHOpen or self.waitingOnQuery then
+  if not Auctionary.State.AHOpen or self.waitingOnQuery then
     return false
   end
   return (CanSendAuctionQuery("list")) and true or false

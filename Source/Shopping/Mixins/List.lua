@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionaryShoppingListMixin = {}
 
@@ -40,11 +40,11 @@ function AuctionaryShoppingListMixin:GetItemByIndex(index)
 end
 
 function AuctionaryShoppingListMixin:GetIndexForItem(item)
-  return Auctionator.Compat.tIndexOf(self.data.items, item)
+  return Auctionary.Compat.tIndexOf(self.data.items, item)
 end
 
 function AuctionaryShoppingListMixin:GetAllItems()
-  return Auctionator.Compat.CopyTable(self.data.items)
+  return Auctionary.Compat.CopyTable(self.data.items)
 end
 
 function AuctionaryShoppingListMixin:DeleteItem(index)

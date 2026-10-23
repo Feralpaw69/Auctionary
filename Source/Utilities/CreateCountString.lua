@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.CreateCountString(count)
-    return Auctionator.Compat.Colors.LIGHTBLUE_FONT_COLOR:WrapTextInColorCode(" x" .. count)
+function Auctionary.Utilities.CreateCountString(count)
+    return Auctionary.Compat.Colors.LIGHTBLUE_FONT_COLOR:WrapTextInColorCode(" x" .. count)
 end

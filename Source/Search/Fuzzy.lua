@@ -1,21 +1,21 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Finds item names close to a mistyped search ("etrnl life" -> "Eternal
 -- Life"). The server only matches exact parts of names, so the names of all
 -- items ever seen in the auction house are remembered and compared here.
 
 local function Names()
-  if Auctionator.SavedState == nil then
+  if Auctionary.SavedState == nil then
     return nil
   end
-  Auctionator.SavedState.ItemNames = Auctionator.SavedState.ItemNames or {}
-  return Auctionator.SavedState.ItemNames
+  Auctionary.SavedState.ItemNames = Auctionary.SavedState.ItemNames or {}
+  return Auctionary.SavedState.ItemNames
 end
 
 -- The value is the item's id when it is known (true for names noted by
 -- older versions)
 local lowerIndex
-function Auctionator.Search.NoteItemName(name, itemID)
+function Auctionary.Search.NoteItemName(name, itemID)
   local names = Names()
   if names ~= nil and name ~= nil and name ~= "" then
     names[name] = tonumber(itemID) or names[name] or true
@@ -26,12 +26,12 @@ function Auctionator.Search.NoteItemName(name, itemID)
 end
 
 -- Drops the lower-case name index; it is rebuilt the next time it is needed
-function Auctionator.Search.ClearNameIndex()
+function Auctionary.Search.ClearNameIndex()
   lowerIndex = nil
 end
 
 -- Item id for an exact item name (upper/lower case does not matter), or nil
-function Auctionator.Search.GetItemIDByName(name)
+function Auctionary.Search.GetItemIDByName(name)
   local names = Names()
   if names == nil or name == nil or name == "" then
     return nil
@@ -142,7 +142,7 @@ end
 
 -- Up to maxResults names, closest first. Exact matches of the text are left
 -- out: the normal search has found nothing for them already.
-function Auctionator.Search.FindSimilarNames(text, maxResults)
+function Auctionary.Search.FindSimilarNames(text, maxResults)
   local names = Names()
   local queryWords = Words(text or "")
   if names == nil or #queryWords == 0 then

@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionaryShoppingListManagerMixin = {}
 
@@ -14,7 +14,7 @@ function AuctionaryShoppingListManagerMixin:Init(getData, setData)
     self.setData({})
   end
 
-  Auctionator.EventBus:RegisterSource(self, "shopping list manager")
+  Auctionary.EventBus:RegisterSource(self, "shopping list manager")
 
   self:Prune()
   self:Sort()
@@ -85,7 +85,7 @@ function AuctionaryShoppingListManagerMixin:GetByIndex(listIndex)
   local data =  self.getData()[listIndex]
   assert(data, "List index doesn't exist")
 
-  return Auctionator.Compat.CreateAndInitFromMixin(AuctionaryShoppingListMixin, data, self)
+  return Auctionary.Compat.CreateAndInitFromMixin(AuctionaryShoppingListMixin, data, self)
 end
 
 function AuctionaryShoppingListManagerMixin:GetByName(listName)
@@ -114,9 +114,9 @@ function AuctionaryShoppingListManagerMixin:GetUnusedName(prefix)
 end
 
 function AuctionaryShoppingListManagerMixin:FireItemChangeEvent(listName)
-  Auctionator.EventBus:Fire(self, Auctionator.Shopping.Events.ListItemChange, listName)
+  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Events.ListItemChange, listName)
 end
 
 function AuctionaryShoppingListManagerMixin:FireMetaChangeEvent(listName)
-  Auctionator.EventBus:Fire(self, Auctionator.Shopping.Events.ListMetaChange, listName)
+  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Events.ListMetaChange, listName)
 end

@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Runs name/category searches against the 3.3.5 auction house, one page of 50
 -- auctions at a time.
@@ -19,7 +19,7 @@ local Auctionator = Auctionary
 -- }
 AuctionaryAHScanFrameMixin = {}
 
-local PAGE_SIZE = Auctionator.Constants.PageSize
+local PAGE_SIZE = Auctionary.Constants.PageSize
 -- Seconds to wait for seller names/item links that the server sends late
 local DETAILS_WAIT = 0.2
 -- Seconds without any answer before a page is requested again
@@ -32,13 +32,13 @@ function AuctionaryAHScanFrameMixin:OnLoad()
   self.active = false
   self:SetScript("OnEvent", self.OnEvent)
   self:RegisterEvent("AUCTION_HOUSE_CLOSED")
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryAHScanFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryAHScanFrameMixin")
 
   -- Another addon (or the Browse tab) searching while a scan runs replaces
   -- the results the scan is waiting for, so the scan has to stop.
   hooksecurefunc("QueryAuctionItems", function()
     if self.active and not self.sendingOwnQuery then
-      Auctionator.Debug.Message("scan: foreign query, aborting")
+      Auctionary.Debug.Message("scan: foreign query, aborting")
       self:Abort()
     end
   end)
@@ -66,7 +66,7 @@ end
 
 function AuctionaryAHScanFrameMixin:Stop()
   if self.sendFunc ~= nil then
-    Auctionator.AH.Queue:Remove(self.sendFunc)
+    Auctionary.AH.Queue:Remove(self.sendFunc)
     self.sendFunc = nil
   end
   self.active = false
@@ -78,7 +78,7 @@ end
 function AuctionaryAHScanFrameMixin:Abort()
   if self.active then
     self:Stop()
-    Auctionator.EventBus:Fire(self, Auctionator.AH.Events.ScanAborted)
+    Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ScanAborted)
   end
 end
 
@@ -111,7 +111,7 @@ function AuctionaryAHScanFrameMixin:SendPage()
     )
     self.sendingOwnQuery = false
   end
-  Auctionator.AH.Queue:Enqueue(self.sendFunc)
+  Auctionary.AH.Queue:Enqueue(self.sendFunc)
 end
 
 function AuctionaryAHScanFrameMixin:OnEvent(eventName)
@@ -143,10 +143,10 @@ function AuctionaryAHScanFrameMixin:OnUpdate()
   elseif GetTime() - self.sentTime > ANSWER_TIMEOUT then
     self.retries = self.retries + 1
     if self.retries > MAX_RETRIES then
-      Auctionator.Debug.Message("scan: no answer, giving up")
+      Auctionary.Debug.Message("scan: no answer, giving up")
       self:Abort()
     else
-      Auctionator.Debug.Message("scan: no answer, asking again", self.page)
+      Auctionary.Debug.Message("scan: no answer, asking again", self.page)
       self:SendPage()
     end
   end
@@ -164,7 +164,7 @@ local function GetFingerprint()
 end
 
 function AuctionaryAHScanFrameMixin:HasAllDetails()
-  local ownerIndex = Auctionator.Constants.AuctionItemInfo.Owner
+  local ownerIndex = Auctionary.Constants.AuctionItemInfo.Owner
   local needOwners = self.query.needOwners
   local numBatch = GetNumAuctionItems("list")
 
@@ -196,7 +196,7 @@ function AuctionaryAHScanFrameMixin:ProcessPage()
   local query = self.query
   local page = self.page
   local numBatch, total = GetNumAuctionItems("list")
-  local nameIndex = Auctionator.Constants.AuctionItemInfo.Name
+  local nameIndex = Auctionary.Constants.AuctionItemInfo.Name
   local exactName = query.isExact and query.searchString and string.lower(query.searchString)
 
   self.lastFingerprint = GetFingerprint()
@@ -222,7 +222,7 @@ function AuctionaryAHScanFrameMixin:ProcessPage()
 
   if self.singlePage then
     self:Stop()
-    Auctionator.EventBus:Fire(self, Auctionator.AH.Events.CurrentPage, results, total)
+    Auctionary.EventBus:Fire(self, Auctionary.AH.Events.CurrentPage, results, total)
     return
   end
 
@@ -238,5 +238,5 @@ function AuctionaryAHScanFrameMixin:ProcessPage()
     self:SendPage()
   end
 
-  Auctionator.EventBus:Fire(self, Auctionator.AH.Events.ScanResultsUpdate, results, gotAllResults, progress)
+  Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ScanResultsUpdate, results, gotAllResults, progress)
 end

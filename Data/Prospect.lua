@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local PROSPECT_ITEMS = {
   COPPER_ORE = "2770",
@@ -78,7 +78,7 @@ local PROSPECT_ITEMS = {
   VOLATILE_EARTH = "52327",
 }
 
-Auctionator.Prospect.PROSPECT_TABLE = {
+Auctionary.Prospect.PROSPECT_TABLE = {
   [PROSPECT_ITEMS.COPPER_ORE] = {
     [PROSPECT_ITEMS.TIGERSEYE] = {0.5},
     [PROSPECT_ITEMS.MALACHITE] = {0.5},

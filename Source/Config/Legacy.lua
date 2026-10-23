@@ -1,16 +1,16 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Options that the original keeps in its auction-house specific source
 -- folders, adjusted for the 3.3.5 auction house.
-Auctionator.Config.ItemMatching = {
+Auctionary.Config.ItemMatching = {
   ITEM_ID_AND_LEVEL = "item level only",
   ITEM_ID = "item id",
   ITEM_NAME_AND_LEVEL = "item name and level",
   ITEM_NAME_ONLY = "item name only",
 }
 
-local Options = Auctionator.Config.Options
-local Defaults = Auctionator.Config.Defaults
+local Options = Auctionary.Config.Options
+local Defaults = Auctionary.Config.Defaults
 
 Options.SMALL_TABS = "small_tabs"
 Options.AUTOSCAN = "autoscan_2"
@@ -105,23 +105,23 @@ Defaults[Options.SMALL_TABS] = false
 Defaults[Options.AUTOSCAN] = false
 Defaults[Options.AUTOSCAN_INTERVAL] = 15
 Defaults[Options.UNDERCUT_SCAN_NOT_LIFO] = true
-Defaults[Options.SELLING_CANCEL_SHORTCUT] = Auctionator.Config.Shortcuts.RIGHT_CLICK
-Defaults[Options.SELLING_BUY_SHORTCUT] = Auctionator.Config.Shortcuts.ALT_RIGHT_CLICK
+Defaults[Options.SELLING_CANCEL_SHORTCUT] = Auctionary.Config.Shortcuts.RIGHT_CLICK
+Defaults[Options.SELLING_BUY_SHORTCUT] = Auctionary.Config.Shortcuts.ALT_RIGHT_CLICK
 Defaults[Options.SELLING_SPLIT_PANELS] = false
 Defaults[Options.COLUMNS_SHOPPING_BUY_ITEM] = {}
 Defaults[Options.COLUMNS_SHOPPING_BUY_COMMODITY] = {}
 Defaults[Options.SHOPPING_ALWAYS_CONFIRM_COMMODITY_QUANTITY] = false
 Defaults[Options.AUCTION_DURATION] = 24
-Defaults[Options.AUCTION_SALES_PREFERENCE] = Auctionator.Config.SalesTypes.PERCENTAGE
+Defaults[Options.AUCTION_SALES_PREFERENCE] = Auctionary.Config.SalesTypes.PERCENTAGE
 Defaults[Options.UNDERCUT_PERCENTAGE] = 0
 Defaults[Options.UNDERCUT_STATIC_VALUE] = 0
-Defaults[Options.SELLING_ITEM_MATCHING] = Auctionator.Config.ItemMatching.ITEM_NAME_AND_LEVEL
+Defaults[Options.SELLING_ITEM_MATCHING] = Auctionary.Config.ItemMatching.ITEM_NAME_AND_LEVEL
 Defaults[Options.PROSPECT_TOOLTIPS] = true
 Defaults[Options.MILL_TOOLTIPS] = true
 
 -- Default number of items per posted stack, by auction house item class.
 -- 0 means "everything you have of the item".
-local ItemClass = Auctionator.Constants.ItemClass
+local ItemClass = Auctionary.Constants.ItemClass
 Defaults[Options.DEFAULT_QUANTITIES] = {
   [ItemClass.Weapon]        = 1,
   [ItemClass.Armor]         = 1,
@@ -138,5 +138,5 @@ Defaults[Options.DEFAULT_QUANTITIES] = {
 }
 
 -- The options panels are built in a later stage of the port
-function Auctionator.Config.InitializeFrames()
+function Auctionary.Config.InitializeFrames()
 end

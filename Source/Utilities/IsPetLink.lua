@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.IsPetLink(itemLink)
+function Auctionary.Utilities.IsPetLink(itemLink)
   return itemLink:match("battlepet:") ~= nil
 end

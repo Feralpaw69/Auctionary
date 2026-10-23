@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Buying.Events = {
+Auctionary.Buying.Events = {
   ShowItemBuy = "buy show item",
   ShowItemConfirmation = "buy show item confirmation",
   RefreshingItems = "buy refreshing items",

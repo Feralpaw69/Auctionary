@@ -1,12 +1,12 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Extract components of an advanced search string.
 -- Assumes searchParametersString is an advanced search.
-function Auctionator.Search.SplitAdvancedSearch(searchParametersString)
+function Auctionary.Search.SplitAdvancedSearch(searchParametersString)
   local queryString, categoryKey, minItemLevel, maxItemLevel, minLevel, maxLevel,
     minCraftedLevel, maxCraftedLevel, minPrice, maxPrice, quality, tier,
     expansion, quantity =
-    strsplit( Auctionator.Constants.AdvancedSearchDivider, searchParametersString )
+    strsplit( Auctionary.Constants.AdvancedSearchDivider, searchParametersString )
 
   -- A nil queryString causes a disconnect if searched for, but an empty one
   -- doesn't, this ensures searchString ~= nil.
@@ -126,7 +126,7 @@ end
 
 local function QuantityString(quantity)
   if quantity ~= nil then
-    return Auctionator.Compat.Colors.LIGHTBLUE_FONT_COLOR:WrapTextInColorCode("x" .. quantity)
+    return Auctionary.Compat.Colors.LIGHTBLUE_FONT_COLOR:WrapTextInColorCode("x" .. quantity)
   else
     return ""
   end
@@ -134,14 +134,14 @@ end
 
 local function QualityString(quality)
   if quality ~= nil and ITEM_QUALITY_COLORS[quality] ~= nil then
-    return Auctionator.Utilities.CreateColoredQuality(quality)
+    return Auctionary.Utilities.CreateColoredQuality(quality)
   else
     return ""
   end
 end
 
 local function TierString(tier)
-  if Auctionator.Constants.IsRetail and tier ~= nil then
+  if Auctionary.Constants.IsRetail and tier ~= nil then
     return C_Texture.GetCraftingReagentQualityChatIcon(tier)
   else
     return ""
@@ -206,12 +206,12 @@ local function ConvertMoneyStrings(splitSearch)
   -- Some padding " " is necessary
   local min = splitSearch.minPrice
   if min ~= nil then
-    min = Auctionator.Compat.GetMoneyString(min, true) .. " "
+    min = Auctionary.Compat.GetMoneyString(min, true) .. " "
   end
 
   local max = splitSearch.maxPrice
   if max ~= nil then
-    max = Auctionator.Compat.GetMoneyString(splitSearch.maxPrice, true) .. " "
+    max = Auctionary.Compat.GetMoneyString(splitSearch.maxPrice, true) .. " "
   end
 
   return min, max
@@ -235,8 +235,8 @@ local function WrapExactSearch(splitSearch)
   end
 end
 
-function Auctionator.Search.PrettifySearchString(searchString)
-  local splitSearch = Auctionator.Search.SplitAdvancedSearch(searchString)
+function Auctionary.Search.PrettifySearchString(searchString)
+  local splitSearch = Auctionary.Search.SplitAdvancedSearch(searchString)
 
   local result = WrapExactSearch(splitSearch)
     .. " ["
@@ -295,7 +295,7 @@ local function TooltipQuality(splitSearch)
   if splitSearch.quality == nil or ITEM_QUALITY_COLORS[splitSearch.quality] == nil then
     key = AUCTIONARY_L_ANY_LOWER
   else
-    key = Auctionator.Utilities.CreateColoredQuality(splitSearch.quality)
+    key = Auctionary.Utilities.CreateColoredQuality(splitSearch.quality)
   end
 
   return {
@@ -320,7 +320,7 @@ end
 local function TooltipTier(splitSearch)
   local key
 
-  if not Auctionator.Constants.IsRetail or splitSearch.tier == nil then
+  if not Auctionary.Constants.IsRetail or splitSearch.tier == nil then
     key = AUCTIONARY_L_ANY_LOWER
   else
     key = C_Texture.GetCraftingReagentQualityChatIcon(splitSearch.tier)
@@ -362,8 +362,8 @@ local function TooltipCraftedLevelRange(splitSearch)
   }
 end
 
-function Auctionator.Search.ComposeTooltip(searchString)
-  local splitSearch = Auctionator.Search.SplitAdvancedSearch(searchString)
+function Auctionary.Search.ComposeTooltip(searchString)
+  local splitSearch = Auctionary.Search.SplitAdvancedSearch(searchString)
 
   local lines = {}
 
@@ -374,7 +374,7 @@ function Auctionator.Search.ComposeTooltip(searchString)
   table.insert(lines, TooltipQuantity(splitSearch))
   table.insert(lines, TooltipCraftedLevelRange(splitSearch))
   table.insert(lines, TooltipQuality(splitSearch))
-  if Auctionator.Constants.IsRetail then
+  if Auctionary.Constants.IsRetail then
     table.insert(lines, TooltipExpansion(splitSearch))
     table.insert(lines, TooltipTier(splitSearch))
   end
@@ -396,7 +396,7 @@ local function GetQueryString(search)
     return search.searchString
   end
 end
-function Auctionator.Search.ReconstituteAdvancedSearch(search)
+function Auctionary.Search.ReconstituteAdvancedSearch(search)
   return strjoin(";",
     GetQueryString(search),
     search.categoryKey or "",

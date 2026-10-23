@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- The Shopping tab: search box, recent searches, results per item and the
 -- list of auctions to buy from after picking a result.
@@ -35,13 +35,13 @@ local SIDE_TABLE_LAYOUT = {
 }
 
 function AuctionaryShoppingTabFrameMixin:OnLoad()
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryShoppingTabFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryShoppingTabFrameMixin")
 
   self:CreateSearchOptions()
   self:CreateSidePanel()
   self:CreateResults()
 
-  self.BuyFrame = Auctionator.Buying.CreateFrame(self)
+  self.BuyFrame = Auctionary.Buying.CreateFrame(self)
   self.BuyFrame:SetPoint("TOPLEFT", self.ResultsListing, "TOPLEFT", 0, 0)
   self.BuyFrame:SetPoint("BOTTOMRIGHT", self.ResultsListing, "BOTTOMRIGHT", 0, 0)
   self.BuyFrame.onClose = function()
@@ -50,13 +50,13 @@ function AuctionaryShoppingTabFrameMixin:OnLoad()
     self:RefreshResults()
   end
 
-  self.SearchProvider = Auctionator.Search.CreateLegacySearchProvider()
+  self.SearchProvider = Auctionary.Search.CreateLegacySearchProvider()
   self.SearchProvider:InitSearch(
     function(results)
       local wasRunning = self.searchRunning
       self.searchRunning = false
       self:SetStatus("")
-      Auctionator.EventBus:Fire(self, Auctionator.Shopping.Tab.Events.SearchEnd, results)
+      Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchEnd, results)
       if self.correctionNote ~= nil then
         self:SetStatus(self.correctionNote)
         self.correctionNote = nil
@@ -74,7 +74,7 @@ function AuctionaryShoppingTabFrameMixin:OnLoad()
     end,
     function(current, total, partialResults)
       self.termProgress = { current = current, total = total }
-      Auctionator.EventBus:Fire(self, Auctionator.Shopping.Tab.Events.SearchIncrementalUpdate, partialResults, total, current)
+      Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate, partialResults, total, current)
     end
   )
   self.SearchProvider.onPageProgress = function(progress)
@@ -85,15 +85,15 @@ function AuctionaryShoppingTabFrameMixin:OnLoad()
     self:SetStatus(text)
   end
 
-  Auctionator.EventBus:Register(self, {
-    Auctionator.Shopping.Tab.Events.SearchStart,
-    Auctionator.Shopping.Tab.Events.SearchEnd,
-    Auctionator.Shopping.Tab.Events.SearchIncrementalUpdate,
-    Auctionator.Shopping.Tab.Events.UpdateSearchTerm,
-    Auctionator.Shopping.Events.RecentSearchesUpdate,
-    Auctionator.Shopping.Events.ListMetaChange,
-    Auctionator.Shopping.Events.ListItemChange,
-    Auctionator.Shopping.Events.ListImportFinished,
+  Auctionary.EventBus:Register(self, {
+    Auctionary.Shopping.Tab.Events.SearchStart,
+    Auctionary.Shopping.Tab.Events.SearchEnd,
+    Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate,
+    Auctionary.Shopping.Tab.Events.UpdateSearchTerm,
+    Auctionary.Shopping.Events.RecentSearchesUpdate,
+    Auctionary.Shopping.Events.ListMetaChange,
+    Auctionary.Shopping.Events.ListItemChange,
+    Auctionary.Shopping.Events.ListImportFinished,
   })
 
   self:SetScript("OnShow", function()
@@ -169,7 +169,7 @@ function AuctionaryShoppingTabFrameMixin:CreateSearchOptions()
       function(searchTerm)
         self:SetSearchTerm(searchTerm)
         self:DoSearch({ searchTerm })
-        Auctionator.Shopping.Recents.Save(searchTerm)
+        Auctionary.Shopping.Recents.Save(searchTerm)
       end
     )
   end)
@@ -196,19 +196,19 @@ function AuctionaryShoppingTabFrameMixin:CreateSearchOptions()
        (ChatFrameEditBox and ChatFrameEditBox:IsVisible()) then
       return
     end
-    local name = Auctionator.Utilities.GetNameFromLink(link)
+    local name = Auctionary.Utilities.GetNameFromLink(link)
     if name ~= nil and name ~= "" then
       local searchTerm = "\"" .. name .. "\""
       self:SetSearchTerm(searchTerm)
       self:DoSearch({ searchTerm })
-      Auctionator.Shopping.Recents.Save(searchTerm)
+      Auctionary.Shopping.Recents.Save(searchTerm)
     end
   end)
 end
 
 ---- Left side: shopping lists and recent searches
 
-local VIEWS = Auctionator.Constants.ShoppingListViews
+local VIEWS = Auctionary.Constants.ShoppingListViews
 
 local function SmallButton(parent, text, width)
   local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
@@ -223,7 +223,7 @@ end
 
 function AuctionaryShoppingTabFrameMixin:ShowItemDialog(title, finishedText, searchTerm, onFinished)
   if self.itemDialog == nil then
-    self.itemDialog = Auctionator.Shopping.CreateItemDialog(self)
+    self.itemDialog = Auctionary.Shopping.CreateItemDialog(self)
   end
   self.itemDialog:Init(title, finishedText)
   self.itemDialog:SetOnFinishedClicked(onFinished)
@@ -247,10 +247,10 @@ function AuctionaryShoppingTabFrameMixin:CreateSidePanel()
     self:SetSideView(VIEWS.Recents)
   end)
 
-  self.SideProvider = Auctionator.Components.CreateDataProvider({
+  self.SideProvider = Auctionary.Components.CreateDataProvider({
     layout = SIDE_TABLE_LAYOUT,
   })
-  self.SideListing = Auctionator.Components.CreateResultsListing(self, self.SideProvider, {
+  self.SideListing = Auctionary.Components.CreateResultsListing(self, self.SideProvider, {
     onRowClick = function(rowData, mouseButton)
       self:SideRowClicked(rowData, mouseButton)
     end,
@@ -267,14 +267,14 @@ function AuctionaryShoppingTabFrameMixin:CreateSidePanel()
   self.ImportButton = SmallButton(self, "Import", SIDE_WIDTH / 3)
   self.ImportButton:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26 + SIDE_WIDTH * 2 / 3, 46)
   self.ImportButton:SetScript("OnClick", function()
-    Auctionator.Components.ShowTextDialog(
+    Auctionary.Components.ShowTextDialog(
       "Import shopping lists",
       "Paste an exported list here (one list per line: name^item^item ...). A list with the same name is replaced.",
       "", "Import",
       function(text)
         text = strtrim(text or "")
         if text ~= "" then
-          Auctionator.Shopping.Lists.BatchImportFromString(text)
+          Auctionary.Shopping.Lists.BatchImportFromString(text)
           self:RefreshSidePanel()
         end
       end
@@ -284,7 +284,7 @@ function AuctionaryShoppingTabFrameMixin:CreateSidePanel()
   self.NewListButton = SmallButton(self, AUCTIONARY_L_NEW_LIST or "New List", SIDE_WIDTH * 2 / 3)
   self.NewListButton:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26, 46)
   self.NewListButton:SetScript("OnClick", function()
-    StaticPopup_Show(Auctionator.Constants.DialogNames.CreateShoppingList, nil, nil, { view = self })
+    StaticPopup_Show(Auctionary.Constants.DialogNames.CreateShoppingList, nil, nil, { view = self })
   end)
 
   self.SearchAllButton = SmallButton(self, AUCTIONARY_L_SEARCH_ALL or "Search All", SIDE_WIDTH / 2)
@@ -313,7 +313,7 @@ function AuctionaryShoppingTabFrameMixin:CreateSidePanel()
 
   self.SideMenu = CreateFrame("Frame", "AuctionaryShoppingSideMenu", UIParent, "UIDropDownMenuTemplate")
 
-  self.sideView = Auctionator.Config.Get(Auctionator.Config.Options.SHOPPING_LAST_CONTAINER_VIEW)
+  self.sideView = Auctionary.Config.Get(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW)
   if self.sideView ~= VIEWS.Recents then
     self.sideView = VIEWS.Lists
   end
@@ -321,7 +321,7 @@ end
 
 function AuctionaryShoppingTabFrameMixin:SetSideView(view)
   self.sideView = view
-  Auctionator.Config.Set(Auctionator.Config.Options.SHOPPING_LAST_CONTAINER_VIEW, view)
+  Auctionary.Config.Set(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW, view)
   self:RefreshSidePanel()
 end
 
@@ -329,11 +329,11 @@ function AuctionaryShoppingTabFrameMixin:GetExpandedList()
   if self.expandedListName == nil then
     return nil
   end
-  if Auctionator.Shopping.ListManager:GetIndexForName(self.expandedListName) == nil then
+  if Auctionary.Shopping.ListManager:GetIndexForName(self.expandedListName) == nil then
     self.expandedListName = nil
     return nil
   end
-  return Auctionator.Shopping.ListManager:GetByName(self.expandedListName)
+  return Auctionary.Shopping.ListManager:GetByName(self.expandedListName)
 end
 
 function AuctionaryShoppingTabFrameMixin:ExpandList(listName)
@@ -355,8 +355,8 @@ function AuctionaryShoppingTabFrameMixin:ListRenamed(oldName, newName)
 end
 
 function AuctionaryShoppingTabFrameMixin:SearchList(listName)
-  local list = listName and Auctionator.Shopping.ListManager:GetIndexForName(listName) ~= nil
-    and Auctionator.Shopping.ListManager:GetByName(listName)
+  local list = listName and Auctionary.Shopping.ListManager:GetIndexForName(listName) ~= nil
+    and Auctionary.Shopping.ListManager:GetByName(listName)
   if list and list:GetItemCount() > 0 then
     self:DoSearch(list:GetAllItems())
   end
@@ -365,18 +365,18 @@ end
 -- Text and tooltip of a list entry, with the price of the last scan: green
 -- when it is at or below the entry's maximum price, red when above
 local function TermDisplay(searchTerm)
-  local text = Auctionator.Search.PrettifySearchString(searchTerm)
+  local text = Auctionary.Search.PrettifySearchString(searchTerm)
   local tooltipText = "Left click: search\nRight click: more"
-  local split = Auctionator.Search.SplitAdvancedSearch(searchTerm)
-  local itemID = Auctionator.Search.GetItemIDByName(split.searchString)
-  local price = itemID and Auctionator.Database ~= nil and Auctionator.Database:GetPrice(tostring(itemID))
+  local split = Auctionary.Search.SplitAdvancedSearch(searchTerm)
+  local itemID = Auctionary.Search.GetItemIDByName(split.searchString)
+  local price = itemID and Auctionary.Database ~= nil and Auctionary.Database:GetPrice(tostring(itemID))
   if price then
-    local priceText = Auctionator.Compat.GetMoneyString(price, true)
-    local age = Auctionator.Database:GetPriceAge(tostring(itemID))
+    local priceText = Auctionary.Compat.GetMoneyString(price, true)
+    local age = Auctionary.Database:GetPriceAge(tostring(itemID))
     local ageText = age == nil and "" or (age == 0 and " (today)" or (" (" .. age .. " days ago)"))
     tooltipText = tooltipText .. "\n\nLowest in the last scan: " .. priceText .. ageText
     if split.maxPrice ~= nil then
-      local limit = Auctionator.Compat.GetMoneyString(split.maxPrice, true)
+      local limit = Auctionary.Compat.GetMoneyString(split.maxPrice, true)
       if price <= split.maxPrice then
         text = "|cff20ff20" .. text .. "|r"
         tooltipText = tooltipText .. "\n|cff20ff20At or below your maximum of " .. limit .. "|r"
@@ -405,11 +405,11 @@ function AuctionaryShoppingTabFrameMixin:RefreshSidePanel()
 
   if self.sideView == VIEWS.Recents then
     header = AUCTIONARY_L_RECENT_SEARCHES or "Recent Searches"
-    for _, searchTerm in ipairs(Auctionator.Shopping.Recents.GetAll()) do
+    for _, searchTerm in ipairs(Auctionary.Shopping.Recents.GetAll()) do
       table.insert(entries, {
         kind = "recent",
         searchTerm = searchTerm,
-        text = Auctionator.Search.PrettifySearchString(searchTerm),
+        text = Auctionary.Search.PrettifySearchString(searchTerm),
         tooltipText = "Left click: search\nRight click: more",
       })
     end
@@ -426,14 +426,14 @@ function AuctionaryShoppingTabFrameMixin:RefreshSidePanel()
         kind = "term",
         index = index,
         searchTerm = searchTerm,
-        text = ok and text or Auctionator.Search.PrettifySearchString(searchTerm),
+        text = ok and text or Auctionary.Search.PrettifySearchString(searchTerm),
         tooltipText = ok and tooltipText or "Left click: search\nRight click: more",
       })
     end
   else
     header = AUCTIONARY_L_SHOPPING_LISTS or "Shopping Lists"
-    for index = 1, Auctionator.Shopping.ListManager:GetCount() do
-      local list = Auctionator.Shopping.ListManager:GetByIndex(index)
+    for index = 1, Auctionary.Shopping.ListManager:GetCount() do
+      local list = Auctionary.Shopping.ListManager:GetByIndex(index)
       table.insert(entries, {
         kind = "list",
         listName = list:GetName(),
@@ -483,7 +483,7 @@ function AuctionaryShoppingTabFrameMixin:ShowSideMenu(entries)
 end
 
 function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
-  local DialogNames = Auctionator.Constants.DialogNames
+  local DialogNames = Auctionary.Constants.DialogNames
   local search = function()
     self:SetSearchTerm(rowData.searchTerm)
     self:DoSearch({ rowData.searchTerm })
@@ -503,7 +503,7 @@ function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
         })
       end
       table.insert(entries, { AUCTIONARY_L_DELETE or DELETE, function()
-        Auctionator.Shopping.Recents.DeleteEntry(rowData.searchTerm)
+        Auctionary.Shopping.Recents.DeleteEntry(rowData.searchTerm)
       end })
       self:ShowSideMenu(entries)
     else
@@ -513,7 +513,7 @@ function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
   elseif rowData.kind == "list" then
     local listName = rowData.listName
     if mouseButton == "RightButton" then
-      local list = Auctionator.Shopping.ListManager:GetByName(listName)
+      local list = Auctionary.Shopping.ListManager:GetByName(listName)
       local entries = {
         { AUCTIONARY_L_SEARCH_ALL or "Search All", function() self:SearchList(listName) end },
       }
@@ -527,10 +527,10 @@ function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
         end })
       end
       table.insert(entries, { "Export", function()
-        Auctionator.Components.ShowTextDialog(
+        Auctionary.Components.ShowTextDialog(
           "Export: " .. listName,
           "Copy this text (Ctrl+C). It can be imported again with the Import button.",
-          Auctionator.Shopping.Lists.GetBatchExportString(listName)
+          Auctionary.Shopping.Lists.GetBatchExportString(listName)
         )
       end })
       table.insert(entries, { AUCTIONARY_L_DELETE or DELETE, function()
@@ -552,8 +552,8 @@ function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
             AUCTIONARY_L_EDIT_ITEM or "Edit Item",
             oldTerm,
             function(newTerm)
-              local list = Auctionator.Shopping.ListManager:GetIndexForName(listName) ~= nil
-                and Auctionator.Shopping.ListManager:GetByName(listName)
+              local list = Auctionary.Shopping.ListManager:GetIndexForName(listName) ~= nil
+                and Auctionary.Shopping.ListManager:GetByName(listName)
               if list and list:GetItemByIndex(index) == oldTerm then
                 list:AlterItem(index, newTerm)
               end
@@ -574,18 +574,18 @@ function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
 end
 
 function AuctionaryShoppingTabFrameMixin:CreateResults()
-  self.DataProvider = Auctionator.Components.CreateDataProvider({
+  self.DataProvider = Auctionary.Components.CreateDataProvider({
     layout = SHOPPING_LIST_TABLE_LAYOUT,
     uniqueKey = function(entry) return entry.key end,
     comparators = {
-      minPrice = Auctionator.Utilities.NumberComparator,
-      name = Auctionator.Utilities.StringComparator,
-      totalQuantity = Auctionator.Utilities.NumberComparator,
-      itemLevel = Auctionator.Utilities.NumberComparator,
+      minPrice = Auctionary.Utilities.NumberComparator,
+      name = Auctionary.Utilities.StringComparator,
+      totalQuantity = Auctionary.Utilities.NumberComparator,
+      itemLevel = Auctionary.Utilities.NumberComparator,
     },
   })
 
-  self.ResultsListing = Auctionator.Components.CreateResultsListing(self, self.DataProvider, {
+  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
     onRowClick = function(rowData, mouseButton)
       if IsShiftKeyDown() then
         self:SetSearchTerm("\"" .. rowData.plainItemName .. "\"")
@@ -600,7 +600,7 @@ end
 
 -- Quantities and prices after something was bought
 function AuctionaryShoppingTabFrameMixin:RefreshResults()
-  local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
+  local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
   for index = 1, self.DataProvider:GetCount() do
     local entry = self.DataProvider:GetEntryAt(index)
     local total, minPrice = 0, nil
@@ -618,7 +618,7 @@ function AuctionaryShoppingTabFrameMixin:RefreshResults()
     if #entry.auctions > 0 or entry.totalQuantity > 0 then
       entry.totalQuantity = total
       entry.minPrice = minPrice
-      entry.available = Auctionator.Compat.FormatLargeNumber(total)
+      entry.available = Auctionary.Compat.FormatLargeNumber(total)
     end
   end
   self.ResultsListing:Refresh()
@@ -630,7 +630,7 @@ end
 
 function AuctionaryShoppingTabFrameMixin:SetSearchTerm(searchTerm)
   self.lastSearchTerm = searchTerm
-  local split = Auctionator.Search.SplitAdvancedSearch(searchTerm)
+  local split = Auctionary.Search.SplitAdvancedSearch(searchTerm)
   local text = split.searchString
   if split.isExact then
     text = "\"" .. text .. "\""
@@ -659,7 +659,7 @@ function AuctionaryShoppingTabFrameMixin:SearchButtonClicked()
   end
   self.SearchBox:ClearFocus()
   self:DoSearch({ searchTerm })
-  Auctionator.Shopping.Recents.Save(searchTerm)
+  Auctionary.Shopping.Recents.Save(searchTerm)
 end
 
 function AuctionaryShoppingTabFrameMixin:DoSearch(terms, options)
@@ -679,7 +679,7 @@ function AuctionaryShoppingTabFrameMixin:DoSearch(terms, options)
 
   self.searchRunning = true
   self.termProgress = nil
-  Auctionator.EventBus:Fire(self, Auctionator.Shopping.Tab.Events.SearchStart, terms)
+  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchStart, terms)
   self.SearchProvider:Search(terms, options or {})
 end
 
@@ -691,7 +691,7 @@ function AuctionaryShoppingTabFrameMixin:TryCorrectedSearch()
     return false
   end
   local term = self.lastTerms[1]
-  local divider = Auctionator.Constants.AdvancedSearchDivider
+  local divider = Auctionary.Constants.AdvancedSearchDivider
   local dividerAt = term:find(divider, 1, true)
   local text = dividerAt and term:sub(1, dividerAt - 1) or term
   local rest = dividerAt and term:sub(dividerAt) or ""
@@ -699,7 +699,7 @@ function AuctionaryShoppingTabFrameMixin:TryCorrectedSearch()
     return false -- nothing typed, or an exact search in quotes
   end
 
-  local similar = Auctionator.Search.FindSimilarNames(text, 3)
+  local similar = Auctionary.Search.FindSimilarNames(text, 3)
   if #similar == 0 then
     return false
   end
@@ -730,7 +730,7 @@ function AuctionaryShoppingTabFrameMixin:OpenBuyFrame(result)
   self:StopSearch()
   self.ResultsListing:Hide()
   self.BuyFrame:Open(result)
-  Auctionator.EventBus:Fire(self, Auctionator.Shopping.Tab.Events.BuyScreenShown)
+  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.BuyScreenShown)
 end
 
 -- After a finished search: straight to the auctions when there is nothing
@@ -761,32 +761,32 @@ function AuctionaryShoppingTabFrameMixin:StopSearch()
 end
 
 function AuctionaryShoppingTabFrameMixin:ReceiveEvent(eventName, eventData)
-  if eventName == Auctionator.Shopping.Tab.Events.SearchStart then
+  if eventName == Auctionary.Shopping.Tab.Events.SearchStart then
     self.DataProvider:Reset()
     self.DataProvider.onSearchStarted()
     self.SearchButton:SetText(AUCTIONARY_L_CANCEL)
     self:SetStatus(SEARCHING or "Searching")
-  elseif eventName == Auctionator.Shopping.Tab.Events.SearchEnd then
+  elseif eventName == Auctionary.Shopping.Tab.Events.SearchEnd then
     self.DataProvider:AppendEntries(eventData, true)
     self.SearchButton:SetText(AUCTIONARY_L_SEARCH)
-  elseif eventName == Auctionator.Shopping.Tab.Events.SearchIncrementalUpdate then
+  elseif eventName == Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate then
     self.DataProvider:AppendEntries(eventData)
-  elseif eventName == Auctionator.Shopping.Tab.Events.UpdateSearchTerm then
+  elseif eventName == Auctionary.Shopping.Tab.Events.UpdateSearchTerm then
     self:SetSearchTerm(eventData)
-  elseif eventName == Auctionator.Shopping.Events.RecentSearchesUpdate or
-         eventName == Auctionator.Shopping.Events.ListMetaChange or
-         eventName == Auctionator.Shopping.Events.ListItemChange or
-         eventName == Auctionator.Shopping.Events.ListImportFinished then
+  elseif eventName == Auctionary.Shopping.Events.RecentSearchesUpdate or
+         eventName == Auctionary.Shopping.Events.ListMetaChange or
+         eventName == Auctionary.Shopping.Events.ListItemChange or
+         eventName == Auctionary.Shopping.Events.ListImportFinished then
     if self:IsVisible() then
       self:RefreshSidePanel()
     end
   end
 end
 
-Auctionator.Tabs.RegisterContent("Shopping", function(panel)
+Auctionary.Tabs.RegisterContent("Shopping", function(panel)
   local frame = CreateFrame("Frame", "AuctionaryShoppingTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionator.Compat.Mixin(frame, AuctionaryShoppingTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionaryShoppingTabFrameMixin)
   frame:OnLoad()
   panel.Content = frame
 end)

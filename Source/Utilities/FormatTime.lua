@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local function Short(seconds)
   if seconds >= 3600 then
@@ -8,13 +8,13 @@ local function Short(seconds)
   end
 end
 
-function Auctionator.Utilities.FormatTimeLeft(seconds)
+function Auctionary.Utilities.FormatTimeLeft(seconds)
   if seconds == nil then
     return ""
   end
-  local color = Auctionator.Compat.Colors.WHITE_FONT_COLOR
+  local color = Auctionary.Compat.Colors.WHITE_FONT_COLOR
   if math.ceil(seconds / 60) < 60 then
-    color = Auctionator.Compat.Colors.RED_FONT_COLOR
+    color = Auctionary.Compat.Colors.RED_FONT_COLOR
   end
   return color:WrapTextInColorCode(Short(seconds))
 end
@@ -26,10 +26,10 @@ local LONG      = Short(hour * 2) .. " - " .. Short(hour * 12)      -- 2h - 12h
 local VERY_LONG = Short(hour * 12) .. " - " .. Short(hour * 48)     -- 12h - 48h
 
 -- timeLeftBand: return value of GetAuctionItemTimeLeft (1 to 4)
-function Auctionator.Utilities.FormatTimeLeftBand(timeLeftBand)
-  local bands = Auctionator.Constants.TimeLeftBand
+function Auctionary.Utilities.FormatTimeLeftBand(timeLeftBand)
+  local bands = Auctionary.Constants.TimeLeftBand
   if timeLeftBand == bands.Short then
-    return Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(SHORT)
+    return Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(SHORT)
   elseif timeLeftBand == bands.Medium then
     return MEDIUM
   elseif timeLeftBand == bands.Long then

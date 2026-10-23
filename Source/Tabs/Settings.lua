@@ -1,8 +1,8 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
--- The "Auctionator" tab: settings of the addon and a short status of the
+-- The "Auctionary" tab: settings of the addon and a short status of the
 -- price database. Everything is saved the moment it is changed.
-local Options = Auctionator.Config.Options
+local Options = Auctionary.Config.Options
 local NAME = "AuctionaryOptions"
 
 AuctionaryOptionsTabFrameMixin = {}
@@ -33,9 +33,9 @@ function AuctionaryOptionsTabFrameMixin:AddCheck(option, text, x, y)
   label:SetPoint("LEFT", check, "RIGHT", 2, 1)
   label:SetText(text)
   check:SetScript("OnClick", function(button)
-    Auctionator.Config.Set(option, button:GetChecked() and true or false)
-    if option == Options.GOLD_TRACKER_BUTTON and Auctionator.Tabs.UpdateGoldButton ~= nil then
-      Auctionator.Tabs.UpdateGoldButton()
+    Auctionary.Config.Set(option, button:GetChecked() and true or false)
+    if option == Options.GOLD_TRACKER_BUTTON and Auctionary.Tabs.UpdateGoldButton ~= nil then
+      Auctionary.Tabs.UpdateGoldButton()
     end
   end)
   self.checks[option] = check
@@ -56,7 +56,7 @@ function AuctionaryOptionsTabFrameMixin:AddNumberBox(key, option, x, y, minimum,
       return
     end
     value = math.max(minimum, math.min(maximum, value))
-    Auctionator.Config.Set(option, value)
+    Auctionary.Config.Set(option, value)
   end
   box:SetScript("OnTextChanged", function(_, userInput)
     if userInput then
@@ -65,12 +65,12 @@ function AuctionaryOptionsTabFrameMixin:AddNumberBox(key, option, x, y, minimum,
   end)
   local function done()
     box:ClearFocus()
-    box:SetText(tostring(Auctionator.Config.Get(option)))
+    box:SetText(tostring(Auctionary.Config.Get(option)))
   end
   box:SetScript("OnEnterPressed", done)
   box:SetScript("OnEscapePressed", done)
   box:SetScript("OnEditFocusLost", function()
-    box:SetText(tostring(Auctionator.Config.Get(option)))
+    box:SetText(tostring(Auctionary.Config.Get(option)))
   end)
   self.boxes[option] = box
   return box
@@ -92,7 +92,7 @@ end
 function AuctionaryOptionsTabFrameMixin:OnLoad()
   self.checks = {}
   self.boxes = {}
-  local SalesTypes = Auctionator.Config.SalesTypes
+  local SalesTypes = Auctionary.Config.SalesTypes
 
   ---- Selling
   local y = -84
@@ -103,14 +103,14 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
 
   y = y - 20
   self.percentRadio = self:AddRadio("Percent", LEFT_X, y, "Percentage", function()
-    Auctionator.Config.Set(Options.AUCTION_SALES_PREFERENCE, SalesTypes.PERCENTAGE)
+    Auctionary.Config.Set(Options.AUCTION_SALES_PREFERENCE, SalesTypes.PERCENTAGE)
   end)
   self:AddNumberBox("UndercutPercent", Options.UNDERCUT_PERCENTAGE, LEFT_X + 130, y + 2, 0, 99)
   Text(self, "%", LEFT_X + 172, y - 3)
 
   y = y - 24
   self.staticRadio = self:AddRadio("Static", LEFT_X, y, "Fixed amount", function()
-    Auctionator.Config.Set(Options.AUCTION_SALES_PREFERENCE, SalesTypes.STATIC)
+    Auctionary.Config.Set(Options.AUCTION_SALES_PREFERENCE, SalesTypes.STATIC)
   end)
   self.staticMoney = CreateFrame("Frame", NAME .. "UndercutMoney", self, "MoneyInputFrameTemplate")
   self.staticMoney:SetPoint("TOPLEFT", self, "TOPLEFT", LEFT_X + 130, y + 2)
@@ -118,7 +118,7 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
     if self.refreshing then
       return
     end
-    Auctionator.Config.Set(Options.UNDERCUT_STATIC_VALUE, MoneyInputFrame_GetCopper(self.staticMoney))
+    Auctionary.Config.Set(Options.UNDERCUT_STATIC_VALUE, MoneyInputFrame_GetCopper(self.staticMoney))
   end)
 
   y = y - 22
@@ -130,7 +130,7 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
   for index, hours in ipairs(DURATIONS) do
     self.durationRadios[hours] = self:AddRadio("Duration" .. hours, LEFT_X + 140 + (index - 1) * 50, y + 2,
       tostring(hours), function()
-        Auctionator.Config.Set(Options.AUCTION_DURATION, hours)
+        Auctionary.Config.Set(Options.AUCTION_DURATION, hours)
         local selling = AuctionarySellingTabFrame
         if selling ~= nil and selling.SetDuration ~= nil then
           selling:SetDuration(hours)
@@ -145,19 +145,19 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
   quantitiesButton:SetPoint("TOPLEFT", self, "TOPLEFT", LEFT_X, y + 4)
   quantitiesButton:SetText("Default stack sizes ...")
   quantitiesButton:SetScript("OnClick", function()
-    Auctionator.Components.ShowDefaultQuantities()
+    Auctionary.Components.ShowDefaultQuantities()
   end)
 
   local backgroundButton = CreateFrame("Button", NAME .. "BackgroundButton", self, "UIPanelButtonTemplate")
   backgroundButton:SetWidth(200)
   backgroundButton:SetHeight(22)
   backgroundButton:SetPoint("LEFT", quantitiesButton, "RIGHT", 8, 0)
-  backgroundButton:SetText("Background: " .. Auctionator.Tabs.GetBackground().name)
+  backgroundButton:SetText("Background: " .. Auctionary.Tabs.GetBackground().name)
   -- All backgrounds in a menu: the three colours, black and the class colours
   local backgroundMenu = CreateFrame("Frame", NAME .. "BackgroundMenu", UIParent, "UIDropDownMenuTemplate")
   UIDropDownMenu_Initialize(backgroundMenu, function()
-    local current = Auctionator.Tabs.GetBackground()
-    for _, background in ipairs(Auctionator.Tabs.Backgrounds) do
+    local current = Auctionary.Tabs.GetBackground()
+    for _, background in ipairs(Auctionary.Tabs.Backgrounds) do
       local info = UIDropDownMenu_CreateInfo()
       local colour = background.border
       if colour ~= nil then
@@ -167,7 +167,7 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
       end
       info.checked = (background == current)
       info.func = function()
-        backgroundButton:SetText("Background: " .. Auctionator.Tabs.SetBackground(background.key))
+        backgroundButton:SetText("Background: " .. Auctionary.Tabs.SetBackground(background.key))
         CloseDropDownMenus()
       end
       UIDropDownMenu_AddButton(info, 1)
@@ -329,10 +329,10 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
   reset:SetScript("OnClick", function()
     if armed ~= nil and GetTime() - armed <= 5 then
       armed = nil
-      Auctionator.GoldLog.Reset()
+      Auctionary.GoldLog.Reset()
       reset:SetText("Reset Gold Tracker data")
-      Auctionator.Utilities.Message("Gold Tracker data deleted. It starts again from "
-        .. Auctionator.Compat.GetMoneyString(GetMoney(), true) .. " on " .. UnitName("player") .. ".")
+      Auctionary.Utilities.Message("Gold Tracker data deleted. It starts again from "
+        .. Auctionary.Compat.GetMoneyString(GetMoney(), true) .. " on " .. UnitName("player") .. ".")
     else
       armed = GetTime()
       reset:SetText("|cffff4040Click again to delete|r")
@@ -413,24 +413,24 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
 end
 
 function AuctionaryOptionsTabFrameMixin:Refresh()
-  local SalesTypes = Auctionator.Config.SalesTypes
+  local SalesTypes = Auctionary.Config.SalesTypes
   for option, check in pairs(self.checks) do
-    check:SetChecked(Auctionator.Config.Get(option) and true or false)
+    check:SetChecked(Auctionary.Config.Get(option) and true or false)
   end
   for option, box in pairs(self.boxes) do
     if not box:HasFocus() then
-      box:SetText(tostring(Auctionator.Config.Get(option) or 0))
+      box:SetText(tostring(Auctionary.Config.Get(option) or 0))
     end
   end
 
-  local isStatic = Auctionator.Config.Get(Options.AUCTION_SALES_PREFERENCE) == SalesTypes.STATIC
+  local isStatic = Auctionary.Config.Get(Options.AUCTION_SALES_PREFERENCE) == SalesTypes.STATIC
   self.percentRadio:SetChecked(not isStatic)
   self.staticRadio:SetChecked(isStatic)
   self.refreshing = true
-  MoneyInputFrame_SetCopper(self.staticMoney, Auctionator.Config.Get(Options.UNDERCUT_STATIC_VALUE) or 0)
+  MoneyInputFrame_SetCopper(self.staticMoney, Auctionary.Config.Get(Options.UNDERCUT_STATIC_VALUE) or 0)
   self.refreshing = false
 
-  local duration = Auctionator.Config.Get(Options.AUCTION_DURATION)
+  local duration = Auctionary.Config.Get(Options.AUCTION_DURATION)
   for hours, radio in pairs(self.durationRadios) do
     radio:SetChecked(hours == duration)
   end
@@ -444,10 +444,10 @@ function AuctionaryOptionsTabFrameMixin:RefreshStatus()
   if version ~= nil then
     table.insert(lines, "Version " .. version)
   end
-  if Auctionator.Database ~= nil and Auctionator.Database.GetItemCount ~= nil then
-    table.insert(lines, "Items with a saved price: " .. tostring(Auctionator.Database:GetItemCount()))
+  if Auctionary.Database ~= nil and Auctionary.Database.GetItemCount ~= nil then
+    table.insert(lines, "Items with a saved price: " .. tostring(Auctionary.Database:GetItemCount()))
   end
-  local scanFrame = Auctionator.FullScan and Auctionator.FullScan.Frame
+  local scanFrame = Auctionary.FullScan and Auctionary.FullScan.Frame
   if scanFrame ~= nil and scanFrame.NextScanMessage ~= nil then
     if scanFrame.CanGetAll ~= nil and scanFrame:CanGetAll() then
       table.insert(lines, "A quick full scan is available now.")
@@ -458,10 +458,10 @@ function AuctionaryOptionsTabFrameMixin:RefreshStatus()
   self.statusText:SetText(table.concat(lines, "\n"))
 end
 
-Auctionator.Tabs.RegisterContent("Auctionator", function(panel)
+Auctionary.Tabs.RegisterContent("Auctionary", function(panel)
   local frame = CreateFrame("Frame", "AuctionaryOptionsTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionator.Compat.Mixin(frame, AuctionaryOptionsTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionaryOptionsTabFrameMixin)
   frame:OnLoad()
   panel.Content = frame
 end)

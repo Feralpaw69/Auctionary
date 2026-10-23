@@ -1,25 +1,25 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Groups.CallbackRegistry = Auctionator.Compat.CreateFromMixins(Auctionator.Compat.CallbackRegistryMixin)
-Auctionator.Groups.CallbackRegistry:OnLoad()
-Auctionator.Groups.CallbackRegistry:GenerateCallbackEvents(Auctionator.Groups.Constants.Events)
+Auctionary.Groups.CallbackRegistry = Auctionary.Compat.CreateFromMixins(Auctionary.Compat.CallbackRegistryMixin)
+Auctionary.Groups.CallbackRegistry:OnLoad()
+Auctionary.Groups.CallbackRegistry:GenerateCallbackEvents(Auctionary.Groups.Constants.Events)
 
 local function InitializeDefaultGroups()
   local defaultGroups = {}
-  for _, classID in ipairs(Auctionator.Groups.Constants.ValidItemClassIDs) do
-    local name = Auctionator.Compat.GetAuctionClassName(classID)
+  for _, classID in ipairs(Auctionary.Groups.Constants.ValidItemClassIDs) do
+    local name = Auctionary.Compat.GetAuctionClassName(classID)
     if name ~= nil then
       table.insert(defaultGroups, {
         name = name,
-        type = Auctionator.Groups.Constants.GroupType.ClassID,
+        type = Auctionary.Groups.Constants.GroupType.ClassID,
         classID = classID,
       })
     end
   end
-  Auctionator.Groups.Constants.DefaultGroups = defaultGroups
+  Auctionary.Groups.Constants.DefaultGroups = defaultGroups
 end
 
-function Auctionator.Groups.Initialize()
+function Auctionary.Groups.Initialize()
   InitializeDefaultGroups()
 
   if type(AUCTIONARY_SELLING_GROUPS) ~= "table" or
@@ -30,7 +30,7 @@ function Auctionator.Groups.Initialize()
       CustomGroups = {},
       HiddenItems = {},
     }
-    Auctionator.Groups.AddGroup("FAVOURITES")
+    Auctionary.Groups.AddGroup("FAVOURITES")
   end
 
   if type(AUCTIONARY_SELLING_GROUPS.HiddenItems) ~= "table" then
@@ -38,6 +38,6 @@ function Auctionator.Groups.Initialize()
   end
 end
 
-function Auctionator.Groups.OnAHOpen()
+function Auctionary.Groups.OnAHOpen()
   -- The bag cache frame is created here in the Selling tab stage of the port
 end

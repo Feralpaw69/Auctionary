@@ -1,10 +1,10 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- The Cancelling tab: the player's own auctions, a scan that finds the ones
 -- somebody else is selling cheaper, and buttons to cancel them.
 AuctionaryCancellingTabFrameMixin = {}
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 local EARLY_STOP_UNDERCUTS = 5  -- this many cheaper auctions (or as many as own ones are up): undercut for sure
 
 local TIME_LEFT = {
@@ -67,7 +67,7 @@ local function GroupKey(itemLink)
 end
 
 function AuctionaryCancellingTabFrameMixin:OnLoad()
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryCancellingTabFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryCancellingTabFrameMixin")
 
   self.rows = {}
   -- [item key] = { lowestOther = unit price or false if nobody else sells it }
@@ -108,20 +108,20 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
   self.Status:SetPoint("RIGHT", self.ShowHiddenButton, "LEFT", -8, 0)
   self.Status:SetJustifyH("LEFT")
 
-  self.DataProvider = Auctionator.Components.CreateDataProvider({
+  self.DataProvider = Auctionary.Components.CreateDataProvider({
     layout = CANCELLING_TABLE_LAYOUT,
     uniqueKey = function(entry) return entry.key end,
     comparators = {
-      name = Auctionator.Utilities.StringComparator,
-      status = Auctionator.Utilities.NumberComparator,
-      stackSize = Auctionator.Utilities.NumberComparator,
-      unitPrice = Auctionator.Utilities.NumberComparator,
-      stackPrice = Auctionator.Utilities.NumberComparator,
-      lowestOther = Auctionator.Utilities.NumberComparator,
-      timeLeft = Auctionator.Utilities.NumberComparator,
+      name = Auctionary.Utilities.StringComparator,
+      status = Auctionary.Utilities.NumberComparator,
+      stackSize = Auctionary.Utilities.NumberComparator,
+      unitPrice = Auctionary.Utilities.NumberComparator,
+      stackPrice = Auctionary.Utilities.NumberComparator,
+      lowestOther = Auctionary.Utilities.NumberComparator,
+      timeLeft = Auctionary.Utilities.NumberComparator,
     },
   })
-  self.ResultsListing = Auctionator.Components.CreateResultsListing(self, self.DataProvider, {
+  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
     onRowClick = function(rowData)
       -- Shift-click hides the item, a double click cancels the auction
       if IsShiftKeyDown() then
@@ -129,7 +129,7 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
         return
       end
       local now = GetTime()
-      local isDouble = Auctionator.Config.Get(Auctionator.Config.Options.DOUBLE_CLICK_ACTIONS)
+      local isDouble = Auctionary.Config.Get(Auctionary.Config.Options.DOUBLE_CLICK_ACTIONS)
         and self.lastClickKey == rowData.key and now - (self.lastClickTime or 0) < 0.4
       self.lastClickKey, self.lastClickTime = rowData.key, now
       if isDouble then
@@ -206,17 +206,17 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
   self.BottomStatus:SetPoint("RIGHT", self.CancelAllButton, "LEFT", -8, 0)
   self.BottomStatus:SetJustifyH("LEFT")
 
-  Auctionator.EventBus:Register(self, {
-    Auctionator.AH.Events.OwnedAuctionsUpdate,
-    Auctionator.AH.Events.ScanResultsUpdate,
-    Auctionator.AH.Events.ScanAborted,
+  Auctionary.EventBus:Register(self, {
+    Auctionary.AH.Events.OwnedAuctionsUpdate,
+    Auctionary.AH.Events.ScanResultsUpdate,
+    Auctionary.AH.Events.ScanAborted,
   })
 
   self:SetScript("OnShow", function()
     -- Every time the tab is opened the auctions are checked for undercuts,
     -- as soon as the list of own auctions is there
     self.autoScanPending = true
-    Auctionator.AH.QueryOwnedAuctions()
+    Auctionary.AH.QueryOwnedAuctions()
   end)
   self:SetScript("OnHide", function()
     self.autoScanPending = false
@@ -289,7 +289,7 @@ function AuctionaryCancellingTabFrameMixin:UpdateTotal()
       count = count + 1
     end
   end
-  self.TotalText:SetText("|cffffd100Posted:|r " .. Auctionator.Compat.GetMoneyString(total, true)
+  self.TotalText:SetText("|cffffd100Posted:|r " .. Auctionary.Compat.GetMoneyString(total, true)
     .. "  |cff909090(" .. count .. ")|r")
 end
 
@@ -435,13 +435,13 @@ function AuctionaryCancellingTabFrameMixin:NextItem()
   self.scanAuctions = {}
   self.scanName = name
   self:SetStatus("Checking " .. self.scanPosition .. " of " .. #self.scanQueue .. ": " .. name)
-  Auctionator.AH.QueryAuctionItems({ searchString = name, isExact = true })
+  Auctionary.AH.QueryAuctionItems({ searchString = name, isExact = true })
 end
 
 function AuctionaryCancellingTabFrameMixin:StopScan()
   if self.scanning then
     self.scanning = false
-    Auctionator.AH.AbortQuery()
+    Auctionary.AH.AbortQuery()
     self:FinishScan(false)
   end
 end
@@ -520,16 +520,16 @@ function AuctionaryCancellingTabFrameMixin:RecordMarket(auctions, partial)
     return
   end
   for itemKey, lowest in pairs(lowestAny) do
-    Auctionator.Utilities.DBKeyFromLink(lowest.itemLink, function(dbKeys)
+    Auctionary.Utilities.DBKeyFromLink(lowest.itemLink, function(dbKeys)
       if dbKeys[1] ~= nil then
-        Auctionator.Database:SetPrice(dbKeys[1], lowest.price, totals[itemKey])
+        Auctionary.Database:SetPrice(dbKeys[1], lowest.price, totals[itemKey])
       end
     end)
   end
 end
 
 function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotAllResults)
-  if eventName == Auctionator.AH.Events.OwnedAuctionsUpdate then
+  if eventName == Auctionary.AH.Events.OwnedAuctionsUpdate then
     if self:IsVisible() then
       self.rows = self:BuildRows(results)
       if self:GetSelectedRow() == nil then
@@ -538,13 +538,13 @@ function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotA
       self:ApplyMarket()
       if not self.scanning and self.cancelMessage == nil then
         self:SetStatus(#self.rows .. " auctions. Shift-click hides an item."
-          .. (Auctionator.Config.Get(Auctionator.Config.Options.DOUBLE_CLICK_ACTIONS) and " Double-click cancels one." or ""))
+          .. (Auctionary.Config.Get(Auctionary.Config.Options.DOUBLE_CLICK_ACTIONS) and " Double-click cancels one." or ""))
       end
       self.cancelMessage = nil
 
       if self.autoScanPending and #self.rows > 0 and not self.scanning then
-        local fullScan = Auctionator.FullScan.Frame
-        local busy = Auctionator.AH.IsQueryActive() or (fullScan ~= nil and fullScan:IsInProgress())
+        local fullScan = Auctionary.FullScan.Frame
+        local busy = Auctionary.AH.IsQueryActive() or (fullScan ~= nil and fullScan:IsInProgress())
         if busy then
           self:SetStatus("Another scan is running. Press \"Scan for Undercuts\" when it is done.")
         else
@@ -554,7 +554,7 @@ function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotA
       end
     end
 
-  elseif eventName == Auctionator.AH.Events.ScanResultsUpdate then
+  elseif eventName == Auctionary.AH.Events.ScanResultsUpdate then
     if self.scanning then
       for _, auction in ipairs(results) do
         table.insert(self.scanAuctions, auction)
@@ -568,13 +568,13 @@ function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotA
         self:RecordMarket(self.scanAuctions, true)
         self:ApplyMarket()
         self.ignoreAbort = true
-        Auctionator.AH.AbortQuery()
+        Auctionary.AH.AbortQuery()
         self.ignoreAbort = false
         self:NextItem()
       end
     end
 
-  elseif eventName == Auctionator.AH.Events.ScanAborted then
+  elseif eventName == Auctionary.AH.Events.ScanAborted then
     if self.scanning and not self.ignoreAbort then
       self.scanning = false
       self:FinishScan(false)
@@ -588,7 +588,7 @@ end
 -- exact match is tried first; bids change an auction's details, so after
 -- that the same item, stack size and buyout is enough.
 local function FindOwnIndex(row)
-  local index = Auctionator.AH.FindAuctionIndex("owner", row.auction)
+  local index = Auctionary.AH.FindAuctionIndex("owner", row.auction)
   if index ~= nil then
     return index
   end
@@ -632,9 +632,9 @@ function AuctionaryCancellingTabFrameMixin:CancelRow(row)
   end
   self:ApplyMarket()
   -- The server sends the new list; ask again in case it does not
-  Auctionator.Compat.After(1.5, function()
+  Auctionary.Compat.After(1.5, function()
     if self:IsVisible() then
-      Auctionator.AH.QueryOwnedAuctions()
+      Auctionary.AH.QueryOwnedAuctions()
     end
   end)
   return index ~= nil
@@ -685,17 +685,17 @@ function AuctionaryCancellingTabFrameMixin:CancelAll()
   self.cancelMessage = true
   self.BottomStatus:SetText("Cancelled " .. cancelled .. " undercut auctions.")
   self:ApplyMarket()
-  Auctionator.Compat.After(1.5, function()
+  Auctionary.Compat.After(1.5, function()
     if self:IsVisible() then
-      Auctionator.AH.QueryOwnedAuctions()
+      Auctionary.AH.QueryOwnedAuctions()
     end
   end)
 end
 
-Auctionator.Tabs.RegisterContent("Cancelling", function(panel)
+Auctionary.Tabs.RegisterContent("Cancelling", function(panel)
   local frame = CreateFrame("Frame", "AuctionaryCancellingTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionator.Compat.Mixin(frame, AuctionaryCancellingTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionaryCancellingTabFrameMixin)
   frame:OnLoad()
   panel.Content = frame
 end)

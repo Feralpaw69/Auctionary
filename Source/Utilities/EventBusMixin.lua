@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionaryEventBusMixin = {}
 
@@ -20,7 +20,7 @@ function AuctionaryEventBusMixin:Register(listener, eventNames)
     end
 
     table.insert(self.registeredListeners[eventName], listener)
-    Auctionator.Debug.Message("AuctionaryEventBusMixin:Register", eventName)
+    Auctionary.Debug.Message("AuctionaryEventBusMixin:Register", eventName)
   end
 
   return self
@@ -29,11 +29,11 @@ end
 -- Assumes events have been registered exactly once
 function AuctionaryEventBusMixin:Unregister(listener, eventNames)
   for _, eventName in ipairs(eventNames) do
-    local index = Auctionator.Compat.tIndexOf(self.registeredListeners[eventName], listener)
+    local index = Auctionary.Compat.tIndexOf(self.registeredListeners[eventName], listener)
     if index ~= nil then
       table.remove(self.registeredListeners[eventName], index)
     end
-    Auctionator.Debug.Message("AuctionaryEventBusMixin:Unregister", eventName)
+    Auctionary.Debug.Message("AuctionaryEventBusMixin:Unregister", eventName)
   end
 
   return self
@@ -60,17 +60,17 @@ function AuctionaryEventBusMixin:Fire(source, eventName, ...)
     error("All sources must be registered (" .. eventName .. ")")
   end
 
-  Auctionator.Debug.Message(
-    "AuctionatorEventBus:Fire()",
+  Auctionary.Debug.Message(
+    "AuctionaryEventBus:Fire()",
     self.sources[source],
     eventName,
     ...
   )
 
   if self.registeredListeners[eventName] ~= nil then
-    Auctionator.Debug.Message("ReceiveEvent", #self.registeredListeners[eventName], eventName)
+    Auctionary.Debug.Message("ReceiveEvent", #self.registeredListeners[eventName], eventName)
 
-    local allListeners = Auctionator.Utilities.Slice(
+    local allListeners = Auctionary.Utilities.Slice(
       self.registeredListeners[eventName],
       1,
       #self.registeredListeners[eventName]
@@ -83,4 +83,4 @@ function AuctionaryEventBusMixin:Fire(source, eventName, ...)
   return self
 end
 
-Auctionator.EventBus = Auctionator.Compat.CreateAndInitFromMixin(AuctionaryEventBusMixin)
+Auctionary.EventBus = Auctionary.Compat.CreateAndInitFromMixin(AuctionaryEventBusMixin)

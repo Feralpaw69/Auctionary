@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Selling.Events = {
+Auctionary.Selling.Events = {
   BagItemClicked = "bag_item_clicked",
   BagItemRequest = "bag_item_request",
   ClearBagItem = "clear_bag_item",
@@ -13,8 +13,8 @@ Auctionator.Selling.Events = {
   ItemIconCallback = "selling_item_icon_callback",
 }
 
-Auctionator.Selling.Events.RefreshHistory = "selling_refresh_history"
-Auctionator.Selling.Events.SellSearchStart = "sell_search_start"
-Auctionator.Selling.Events.PriceSelected = "price_selected"
-Auctionator.Selling.Events.RefreshSearch = "selling_refresh_search"
-Auctionator.Selling.Events.ShowConfirmPurchase = "selling_confirm_commodity_callback"
+Auctionary.Selling.Events.RefreshHistory = "selling_refresh_history"
+Auctionary.Selling.Events.SellSearchStart = "sell_search_start"
+Auctionary.Selling.Events.PriceSelected = "price_selected"
+Auctionary.Selling.Events.RefreshSearch = "selling_refresh_search"
+Auctionary.Selling.Events.ShowConfirmPurchase = "selling_confirm_commodity_callback"

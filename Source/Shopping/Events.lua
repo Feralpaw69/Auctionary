@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Shopping.Events = {
+Auctionary.Shopping.Events = {
   -- Changes to list meta data (including renames, deletes and pruning)
   ListMetaChange = "shopping list meta change",
   -- Changes to individual items in a list (edit, delete, add, etc.)
@@ -11,7 +11,7 @@ Auctionator.Shopping.Events = {
   RecentSearchesUpdate = "shopping tab recent searches update",
 }
 
-Auctionator.Shopping.Tab.Events = {
+Auctionary.Shopping.Tab.Events = {
   SearchStart = "shopping tab search start",
   SearchEnd = "shopping tab search end",
   SearchIncrementalUpdate = "shopping tab search incremental update",

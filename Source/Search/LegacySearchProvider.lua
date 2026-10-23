@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Runs the search terms of the Shopping tab against the 3.3.5 auction house.
 -- Every term is searched over all its pages; the auctions found are then
@@ -7,24 +7,24 @@ local Auctionator = Auctionary
 --   itemLink, name, plainItemName, iconTexture, quality, itemLevel, itemID,
 --   minPrice (lowest buyout for one unit, nil if nothing has a buyout),
 --   totalQuantity, containsOwnerItem, purchaseQuantity,
---   auctions = { ... }  the auctions as reported by Auctionator.AH
+--   auctions = { ... }  the auctions as reported by Auctionary.AH
 -- }
-AuctionaryLegacySearchProviderMixin = Auctionator.Compat.CreateFromMixins(
+AuctionaryLegacySearchProviderMixin = Auctionary.Compat.CreateFromMixins(
   AuctionaryMultiSearchMixin, AuctionarySearchProviderMixin
 )
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 
 local SEARCH_EVENTS = {
-  Auctionator.AH.Events.ScanResultsUpdate,
-  Auctionator.AH.Events.ScanAborted,
+  Auctionary.AH.Events.ScanResultsUpdate,
+  Auctionary.AH.Events.ScanAborted,
 }
 
 function AuctionaryLegacySearchProviderMixin:CreateSearchTerm(term)
-  Auctionator.Debug.Message("AuctionaryLegacySearchProviderMixin:CreateSearchTerm()", term)
+  Auctionary.Debug.Message("AuctionaryLegacySearchProviderMixin:CreateSearchTerm()", term)
 
-  local parsed = Auctionator.Search.SplitAdvancedSearch(term)
-  local category = Auctionator.Search.GetLegacyCategory(parsed.categoryKey) or {}
+  local parsed = Auctionary.Search.SplitAdvancedSearch(term)
+  local category = Auctionary.Search.GetLegacyCategory(parsed.categoryKey) or {}
 
   return {
     query = {
@@ -56,7 +56,7 @@ function AuctionaryLegacySearchProviderMixin:GetSearchProvider()
     self.resultMetadata = searchTerm.resultMetadata
     self.termAuctions = {}
     self.gotAllResults = false
-    Auctionator.AH.QueryAuctionItems(searchTerm.query)
+    Auctionary.AH.QueryAuctionItems(searchTerm.query)
   end
 end
 
@@ -68,7 +68,7 @@ function AuctionaryLegacySearchProviderMixin:GetCurrentEmptyResult()
   local searchTerm = self:GetCurrentSearchParameter()
   return {
     key = "empty:" .. self:GetCurrentSearchIndex(),
-    name = Auctionator.Search.PrettifySearchString(searchTerm),
+    name = Auctionary.Search.PrettifySearchString(searchTerm),
     plainItemName = (searchTerm:gsub("\"", "")),
     totalQuantity = 0,
     available = "0",
@@ -80,14 +80,14 @@ end
 function AuctionaryLegacySearchProviderMixin:RegisterProviderEvents()
   if not self.registeredForEvents then
     self.registeredForEvents = true
-    Auctionator.EventBus:Register(self, SEARCH_EVENTS)
+    Auctionary.EventBus:Register(self, SEARCH_EVENTS)
   end
 end
 
 function AuctionaryLegacySearchProviderMixin:UnregisterProviderEvents()
   if self.registeredForEvents then
     self.registeredForEvents = false
-    Auctionator.EventBus:Unregister(self, SEARCH_EVENTS)
+    Auctionary.EventBus:Unregister(self, SEARCH_EVENTS)
   end
 end
 
@@ -95,7 +95,7 @@ function AuctionaryLegacySearchProviderMixin:AbortSearch()
   local wasRunning = not self.complete
   AuctionaryMultiSearchMixin.AbortSearch(self)
   if wasRunning then
-    Auctionator.AH.AbortQuery()
+    Auctionary.AH.AbortQuery()
   end
 end
 
@@ -110,7 +110,7 @@ end
 
 function AuctionaryLegacySearchProviderMixin:GroupAuctions(auctions)
   local playerName = UnitName("player")
-  local isOwnAuction = Auctionator.AH.GetOwnAuctionChecker()
+  local isOwnAuction = Auctionary.AH.GetOwnAuctionChecker()
   local groups, order = {}, {}
 
   for _, auction in ipairs(auctions) do
@@ -122,7 +122,7 @@ function AuctionaryLegacySearchProviderMixin:GroupAuctions(auctions)
       group = {
         key = key,
         itemLink = auction.itemLink,
-        itemID = tonumber(Auctionator.Utilities.BasicDBKeyFromLink(auction.itemLink)),
+        itemID = tonumber(Auctionary.Utilities.BasicDBKeyFromLink(auction.itemLink)),
         name = info[AuctionItemInfo.Name],
         plainItemName = info[AuctionItemInfo.Name],
         iconTexture = info[AuctionItemInfo.Texture],
@@ -134,7 +134,7 @@ function AuctionaryLegacySearchProviderMixin:GroupAuctions(auctions)
       }
       groups[key] = group
       table.insert(order, group)
-      Auctionator.CraftingInfo.NoteItemName(group.name, auction.itemLink)
+      Auctionary.CraftingInfo.NoteItemName(group.name, auction.itemLink)
     end
 
     local count = info[AuctionItemInfo.Quantity] or 0
@@ -166,11 +166,11 @@ function AuctionaryLegacySearchProviderMixin:FinishTerm()
     -- All auctions of an item were seen, so its lowest price is known
     if group.marketPrice ~= nil then
       local minPrice, totalQuantity = group.marketPrice, group.totalQuantity
-      Auctionator.Utilities.DBKeyFromLink(group.itemLink, function(dbKeys)
+      Auctionary.Utilities.DBKeyFromLink(group.itemLink, function(dbKeys)
         -- The plain item ID of gear with a random suffix would only get the
         -- price of this one suffix
         if dbKeys[1] ~= nil then
-          Auctionator.Database:SetPrice(dbKeys[1], minPrice, totalQuantity)
+          Auctionary.Database:SetPrice(dbKeys[1], minPrice, totalQuantity)
         end
       end)
     end
@@ -178,7 +178,7 @@ function AuctionaryLegacySearchProviderMixin:FinishTerm()
     if InRange(group.minPrice or 0, self.currentFilter.price) and
        (group.itemLevel == 0 or InRange(group.itemLevel, self.currentFilter.itemLevel)) then
       group.purchaseQuantity = self.resultMetadata.quantity
-      group.available = Auctionator.Compat.FormatLargeNumber(group.totalQuantity)
+      group.available = Auctionary.Compat.FormatLargeNumber(group.totalQuantity)
       group.isOwned = group.containsOwnerItem and (AUCTIONARY_L_UNDERCUT_YES or YES) or ""
       table.insert(results, group)
     end
@@ -193,7 +193,7 @@ function AuctionaryLegacySearchProviderMixin:ReceiveEvent(eventName, results, go
     return
   end
 
-  if eventName == Auctionator.AH.Events.ScanResultsUpdate then
+  if eventName == Auctionary.AH.Events.ScanResultsUpdate then
     for _, auction in ipairs(results) do
       table.insert(self.termAuctions, auction)
     end
@@ -203,14 +203,14 @@ function AuctionaryLegacySearchProviderMixin:ReceiveEvent(eventName, results, go
     if gotAllResults then
       self:FinishTerm()
     end
-  elseif eventName == Auctionator.AH.Events.ScanAborted then
+  elseif eventName == Auctionary.AH.Events.ScanAborted then
     -- Closed auction house or a search by something else
     AuctionaryMultiSearchMixin.AbortSearch(self)
   end
 end
 
-function Auctionator.Search.CreateLegacySearchProvider()
-  local provider = Auctionator.Compat.CreateFromMixins(AuctionaryLegacySearchProviderMixin)
+function Auctionary.Search.CreateLegacySearchProvider()
+  local provider = Auctionary.Compat.CreateFromMixins(AuctionaryLegacySearchProviderMixin)
   provider.complete = true
   return provider
 end

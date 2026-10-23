@@ -1,37 +1,37 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Shopping.Recents = {}
+Auctionary.Shopping.Recents = {}
 
-function Auctionator.Shopping.Recents.Save(searchText)
-  local prevIndex = Auctionator.Compat.tIndexOf(AUCTIONARY_RECENT_SEARCHES, searchText)
+function Auctionary.Shopping.Recents.Save(searchText)
+  local prevIndex = Auctionary.Compat.tIndexOf(AUCTIONARY_RECENT_SEARCHES, searchText)
   if prevIndex ~= nil then
     table.remove(AUCTIONARY_RECENT_SEARCHES, prevIndex)
   end
 
   table.insert(AUCTIONARY_RECENT_SEARCHES, 1, searchText)
 
-  while #AUCTIONARY_RECENT_SEARCHES > Auctionator.Constants.RecentsListLimit do
+  while #AUCTIONARY_RECENT_SEARCHES > Auctionary.Constants.RecentsListLimit do
     table.remove(AUCTIONARY_RECENT_SEARCHES)
   end
 
-  Auctionator.EventBus
-    :RegisterSource(Auctionator.Shopping.Recents.Save, "save recents entry")
-    :Fire(Auctionator.Shopping.Recents.Save, Auctionator.Shopping.Events.RecentSearchesUpdate)
-    :UnregisterSource(Auctionator.Shopping.Recents.Save)
+  Auctionary.EventBus
+    :RegisterSource(Auctionary.Shopping.Recents.Save, "save recents entry")
+    :Fire(Auctionary.Shopping.Recents.Save, Auctionary.Shopping.Events.RecentSearchesUpdate)
+    :UnregisterSource(Auctionary.Shopping.Recents.Save)
 end
 
-function Auctionator.Shopping.Recents.DeleteEntry(searchTerm)
-  local index = Auctionator.Compat.tIndexOf(AUCTIONARY_RECENT_SEARCHES, searchTerm)
+function Auctionary.Shopping.Recents.DeleteEntry(searchTerm)
+  local index = Auctionary.Compat.tIndexOf(AUCTIONARY_RECENT_SEARCHES, searchTerm)
 
   if index ~= nil then
     table.remove(AUCTIONARY_RECENT_SEARCHES, index)
-    Auctionator.EventBus
-      :RegisterSource(Auctionator.Shopping.Recents.DeleteEntry, "delete recents entry")
-      :Fire(Auctionator.Shopping.Recents.DeleteEntry, Auctionator.Shopping.Events.RecentSearchesUpdate)
-      :UnregisterSource(Auctionator.Shopping.Recents.DeleteEntry)
+    Auctionary.EventBus
+      :RegisterSource(Auctionary.Shopping.Recents.DeleteEntry, "delete recents entry")
+      :Fire(Auctionary.Shopping.Recents.DeleteEntry, Auctionary.Shopping.Events.RecentSearchesUpdate)
+      :UnregisterSource(Auctionary.Shopping.Recents.DeleteEntry)
   end
 end
 
-function Auctionator.Shopping.Recents.GetAll()
+function Auctionary.Shopping.Recents.GetAll()
   return AUCTIONARY_RECENT_SEARCHES
 end

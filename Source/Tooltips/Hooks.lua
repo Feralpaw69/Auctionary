@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Adds the price lines to item tooltips. Every way the 3.3.5 client fills an
 -- item tooltip is a method of the tooltip; each handler finds the item link
@@ -11,7 +11,7 @@ local function Show(tip, itemLink, itemCount)
     _, itemLink = tip:GetItem()
   end
   if itemLink ~= nil then
-    Auctionator.Tooltip.ShowTipWithPricing(tip, itemLink, itemCount or 1)
+    Auctionary.Tooltip.ShowTipWithPricing(tip, itemLink, itemCount or 1)
   end
 end
 
@@ -124,10 +124,10 @@ end
 
 local function Guarded(handler)
   return function(...)
-    if Auctionator.State.Loaded then
+    if Auctionary.State.Loaded then
       local ok, message = pcall(handler, ...)
       if not ok then
-        Auctionator.Debug.Message("tooltip handler failed", message)
+        Auctionary.Debug.Message("tooltip handler failed", message)
       end
     end
   end

@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local compareAscending = function(left, right, leftIndex, rightIndex)
   if left < right then
@@ -20,12 +20,12 @@ local compareDescending = function(left, right, leftIndex, rightIndex)
   end
 end
 
-function Auctionator.Utilities.NumberComparator(order, fieldName)
+function Auctionary.Utilities.NumberComparator(order, fieldName)
   return function(left, right)
     if left == nil then left = {sortingIndex = 0} end
     if right == nil then right = {sortingIndex = 0} end
 
-    if order == Auctionator.Constants.SORT.ASCENDING then
+    if order == Auctionary.Constants.SORT.ASCENDING then
       return compareAscending((left[fieldName] or 0), (right[fieldName] or 0), left.sortingIndex, right.sortingIndex)
     else
       return compareDescending((left[fieldName] or 0), (right[fieldName] or 0), left.sortingIndex, right.sortingIndex)
@@ -33,12 +33,12 @@ function Auctionator.Utilities.NumberComparator(order, fieldName)
   end
 end
 
-function Auctionator.Utilities.StringComparator(order, fieldName)
+function Auctionary.Utilities.StringComparator(order, fieldName)
   return function(left, right)
     if left == nil then left = {sortingIndex = 0} end
     if right == nil then right = {sortingIndex = 0} end
 
-    if order == Auctionator.Constants.SORT.ASCENDING then
+    if order == Auctionary.Constants.SORT.ASCENDING then
       return compareAscending((left[fieldName] or ""), (right[fieldName] or ""), left.sortingIndex, right.sortingIndex)
     else
       return compareDescending((left[fieldName] or ""), (right[fieldName] or ""), left.sortingIndex, right.sortingIndex)

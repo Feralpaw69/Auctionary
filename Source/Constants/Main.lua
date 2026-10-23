@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Constants = {
+Auctionary.Constants = {
   AddonName = "Auctionary",
 
   History = {
@@ -64,7 +64,7 @@ Auctionator.Constants = {
 }
 
 -- Item quality numbers (same values on every client version)
-Auctionator.Constants.ItemQuality = {
+Auctionary.Constants.ItemQuality = {
   Poor = 0,
   Standard = 1, Common = 1,
   Good = 2, Uncommon = 2,
@@ -75,17 +75,17 @@ Auctionator.Constants.ItemQuality = {
   Heirloom = 7,
 }
 
-Auctionator.Constants.QualityIDs = {
-  Auctionator.Constants.ItemQuality.Poor,
-  Auctionator.Constants.ItemQuality.Standard,
-  Auctionator.Constants.ItemQuality.Good,
-  Auctionator.Constants.ItemQuality.Rare,
-  Auctionator.Constants.ItemQuality.Epic,
+Auctionary.Constants.QualityIDs = {
+  Auctionary.Constants.ItemQuality.Poor,
+  Auctionary.Constants.ItemQuality.Standard,
+  Auctionary.Constants.ItemQuality.Good,
+  Auctionary.Constants.ItemQuality.Rare,
+  Auctionary.Constants.ItemQuality.Epic,
 }
 
 -- Item classes are the positions returned by GetAuctionItemClasses() in the
 -- 3.3.5 client. The same numbers are passed to QueryAuctionItems.
-Auctionator.Constants.ItemClass = {
+Auctionary.Constants.ItemClass = {
   Weapon = 1,
   Armor = 2,
   Container = 3,
@@ -100,23 +100,23 @@ Auctionator.Constants.ItemClass = {
   Questitem = 12,
 }
 
-Auctionator.Constants.ValidItemClassIDs = {
-  Auctionator.Constants.ItemClass.Weapon,
-  Auctionator.Constants.ItemClass.Armor,
-  Auctionator.Constants.ItemClass.Container,
-  Auctionator.Constants.ItemClass.Consumable,
-  Auctionator.Constants.ItemClass.Glyph,
-  Auctionator.Constants.ItemClass.Tradegoods,
-  Auctionator.Constants.ItemClass.Projectile,
-  Auctionator.Constants.ItemClass.Quiver,
-  Auctionator.Constants.ItemClass.Recipe,
-  Auctionator.Constants.ItemClass.Gem,
-  Auctionator.Constants.ItemClass.Miscellaneous,
-  Auctionator.Constants.ItemClass.Questitem,
+Auctionary.Constants.ValidItemClassIDs = {
+  Auctionary.Constants.ItemClass.Weapon,
+  Auctionary.Constants.ItemClass.Armor,
+  Auctionary.Constants.ItemClass.Container,
+  Auctionary.Constants.ItemClass.Consumable,
+  Auctionary.Constants.ItemClass.Glyph,
+  Auctionary.Constants.ItemClass.Tradegoods,
+  Auctionary.Constants.ItemClass.Projectile,
+  Auctionary.Constants.ItemClass.Quiver,
+  Auctionary.Constants.ItemClass.Recipe,
+  Auctionary.Constants.ItemClass.Gem,
+  Auctionary.Constants.ItemClass.Miscellaneous,
+  Auctionary.Constants.ItemClass.Questitem,
 }
 
 -- GetAuctionItemTimeLeft bands
-Auctionator.Constants.TimeLeftBand = {
+Auctionary.Constants.TimeLeftBand = {
   Short = 1,    -- less than 30 minutes
   Medium = 2,   -- 30 minutes to 2 hours
   Long = 3,     -- 2 to 12 hours

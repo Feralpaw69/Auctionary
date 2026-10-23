@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local currentLocale = {}
 
@@ -40,10 +40,13 @@ for key, value in pairs(currentLocale) do
   _G["AUCTIONARY_L_"..key] = value
 end
 
-function Auctionator.Locales.Apply(s, ...)
+function Auctionary.Locales.Apply(s, ...)
   if currentLocale[s] ~= nil then
     return string.format(currentLocale[s], ...)
   else
     error("Unknown/missing locale string '" .. s .. "'")
   end
 end
+
+-- The texts of all languages are not needed any more once this one is set up
+AUCTIONARY_LOCALES = nil

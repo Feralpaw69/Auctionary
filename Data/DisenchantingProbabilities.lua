@@ -1,15 +1,15 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Just re-namespacing for convenience in this file
--- local MATS = Auctionator.Constants.DisenchantMats
+-- local MATS = Auctionary.Constants.DisenchantMats
 
-Auctionator.Constants.DisenchantingProbabilityKeys = {
+Auctionary.Constants.DisenchantingProbabilityKeys = {
   LOW = 1,
   HIGH = 2,
   PROBABILITIES = 3
 }
 
-Auctionator.Constants.DisenchantingProbability = {
+Auctionary.Constants.DisenchantingProbability = {
   [ "ARMOR" ] = {
     [ 2 ] = {
       -- { 5, 15, 80, { 1, 2 }, MATS.STRANGE_DUST, 20, { 1, 2 }, MATS.LESSER_MAGIC },
@@ -342,6 +342,6 @@ Auctionator.Constants.DisenchantingProbability = {
 --    return entry
 -- end
 
--- for i, element in pairs( Auctionator.Constants.DisenchantingProbability[ Enum.ItemClass.Amor ][ 2 ] ) do
---    Auctionator.Util.FlatPrint( DEMap( element ) )
+-- for i, element in pairs( Auctionary.Constants.DisenchantingProbability[ Enum.ItemClass.Amor ][ 2 ] ) do
+--    Auctionary.Util.FlatPrint( DEMap( element ) )
 -- end

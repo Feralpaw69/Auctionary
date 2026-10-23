@@ -1,7 +1,7 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- "1234" for |Hitem:1234:...|h links or plain "item:1234" strings
-function Auctionator.Utilities.BasicDBKeyFromLink(itemLink)
+function Auctionary.Utilities.BasicDBKeyFromLink(itemLink)
   if itemLink ~= nil then
     local _, _, itemString = string.find(itemLink, "^|c%x+|H(.+)|h%[.*%]")
     if itemString == nil and string.find(itemLink, "^item") then
@@ -19,7 +19,7 @@ end
 
 -- Random suffix ("of the Bear") from a 3.3.5 item link:
 -- item:itemID:enchant:gem1:gem2:gem3:gem4:suffixID:uniqueID:linkLevel
-function Auctionator.Utilities.GetSuffixIDFromLink(itemLink)
+function Auctionary.Utilities.GetSuffixIDFromLink(itemLink)
   local suffix = tonumber((itemLink:match("item:%-?%d+:%-?%d*:%-?%d*:%-?%d*:%-?%d*:%-?%d*:(%-?%d+)")))
   if suffix == 0 then
     return nil
@@ -28,12 +28,12 @@ function Auctionator.Utilities.GetSuffixIDFromLink(itemLink)
 end
 
 local function GetKeys(itemLink, basicKey)
-  local classID = Auctionator.Compat.GetItemClassID(itemLink)
-  if classID ~= nil and Auctionator.Utilities.IsEquipment(classID) then
-    local suffix = Auctionator.Utilities.GetSuffixIDFromLink(itemLink)
+  local classID = Auctionary.Compat.GetItemClassID(itemLink)
+  if classID ~= nil and Auctionary.Utilities.IsEquipment(classID) then
+    local suffix = Auctionary.Utilities.GetSuffixIDFromLink(itemLink)
     if suffix ~= nil then
-      local suffixStringID = Auctionator.Utilities.SuffixIDToSuffixStringID[suffix]
-      local suffixString = Auctionator.Utilities.SuffixStringIDTOSuffixString[suffixStringID]
+      local suffixStringID = Auctionary.Utilities.SuffixIDToSuffixStringID[suffix]
+      local suffixString = Auctionary.Utilities.SuffixStringIDTOSuffixString[suffixStringID]
       if suffixString then
         return {"gr:" .. basicKey .. ":" .. suffixString, basicKey}
       else
@@ -47,18 +47,18 @@ end
 
 -- Calls callback with a list of database keys, most specific first. The
 -- callback runs immediately when the item is in the client's item cache.
-function Auctionator.Utilities.DBKeyFromLink(itemLink, callback)
-  local basicKey = Auctionator.Utilities.BasicDBKeyFromLink(itemLink)
+function Auctionary.Utilities.DBKeyFromLink(itemLink, callback)
+  local basicKey = Auctionary.Utilities.BasicDBKeyFromLink(itemLink)
 
   if basicKey == nil then
     callback({})
     return
   end
 
-  if Auctionator.Compat.IsItemCached(basicKey) then
+  if Auctionary.Compat.IsItemCached(basicKey) then
     callback(GetKeys(itemLink, basicKey))
   else
-    Auctionator.Compat.LoadItem(basicKey, function(success)
+    Auctionary.Compat.LoadItem(basicKey, function(success)
       if success then
         callback(GetKeys(itemLink, basicKey))
       else
@@ -68,7 +68,7 @@ function Auctionator.Utilities.DBKeyFromLink(itemLink, callback)
   end
 end
 
-function Auctionator.Utilities.DBKeysFromMultipleLinks(itemLinks, callback)
+function Auctionary.Utilities.DBKeysFromMultipleLinks(itemLinks, callback)
   local result = {}
   if #itemLinks == 0 then
     callback(result)
@@ -76,7 +76,7 @@ function Auctionator.Utilities.DBKeysFromMultipleLinks(itemLinks, callback)
   end
   local finished = false
   for index, link in ipairs(itemLinks) do
-    Auctionator.Utilities.DBKeyFromLink(link, function(dbKeys)
+    Auctionary.Utilities.DBKeyFromLink(link, function(dbKeys)
       result[index] = dbKeys
       if finished then
         return

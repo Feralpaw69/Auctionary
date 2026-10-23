@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.PriceWarningThreshold(unitPrice)
+function Auctionary.Utilities.PriceWarningThreshold(unitPrice)
   if unitPrice == 0 then
     return 0
   end

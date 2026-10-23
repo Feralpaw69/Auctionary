@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- A sortable table with a scroll bar, the 3.3.5 stand-in for the ScrollBox
 -- based results listing. Shows the rows of a data provider
@@ -34,15 +34,15 @@ end
 local GOOD_DOT = "|TInterface\\FriendsFrame\\StatusIcon-Online:11:11:0:0|t "
 local BAD_DOT = "|TInterface\\FriendsFrame\\StatusIcon-DND:11:11:0:0|t "
 local function BuyDot(rowData, price)
-  if rowData.itemLink == nil or Auctionator.Database == nil then
+  if rowData.itemLink == nil or Auctionary.Database == nil then
     return ""
   end
   if rowData.buyAverage == nil then
     rowData.buyAverage = false
-    Auctionator.Utilities.DBKeyFromLink(rowData.itemLink, function(dbKeys)
+    Auctionary.Utilities.DBKeyFromLink(rowData.itemLink, function(dbKeys)
       if dbKeys[1] ~= nil then
-        rowData.buyAverage = Auctionator.Database:GetScanAverage(
-          dbKeys[1], Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
+        rowData.buyAverage = Auctionary.Database:GetScanAverage(
+          dbKeys[1], Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
         ) or false
       end
     end)
@@ -67,9 +67,9 @@ local function FormatCell(column, rowData)
     end
     if column.buyDot then
       local ok, dot = pcall(BuyDot, rowData, value)
-      return (ok and dot or "") .. Auctionator.Compat.GetAlignedMoneyString(value)
+      return (ok and dot or "") .. Auctionary.Compat.GetAlignedMoneyString(value)
     end
-    return Auctionator.Compat.GetAlignedMoneyString(value)
+    return Auctionary.Compat.GetAlignedMoneyString(value)
   elseif column.cellType == "item" then
     local name = rowData[column.field] or ""
     if rowData.quality ~= nil then
@@ -202,11 +202,11 @@ function AuctionaryResultsListingMixin:SortBy(index)
     return
   end
 
-  if self.sortIndex == index and self.sortDirection == Auctionator.Constants.SORT.ASCENDING then
-    self.sortDirection = Auctionator.Constants.SORT.DESCENDING
+  if self.sortIndex == index and self.sortDirection == Auctionary.Constants.SORT.ASCENDING then
+    self.sortDirection = Auctionary.Constants.SORT.DESCENDING
     column.header.Arrow:SetTexCoord(0, 0.5625, 1, 0)
   else
-    self.sortDirection = Auctionator.Constants.SORT.ASCENDING
+    self.sortDirection = Auctionary.Constants.SORT.ASCENDING
     column.header.Arrow:SetTexCoord(0, 0.5625, 0, 1)
   end
   self.sortIndex = index
@@ -423,12 +423,12 @@ function AuctionaryResultsListingMixin:Refresh()
   end
 end
 
-function Auctionator.Components.CreateResultsListing(parent, dataProvider, options)
+function Auctionary.Components.CreateResultsListing(parent, dataProvider, options)
   listingCount = listingCount + 1
   local name = "AuctionaryResultsListing" .. listingCount
 
   local listing = CreateFrame("Frame", name, parent)
-  Auctionator.Compat.Mixin(listing, AuctionaryResultsListingMixin)
+  Auctionary.Compat.Mixin(listing, AuctionaryResultsListingMixin)
 
   listing.ScrollFrame = CreateFrame("ScrollFrame", name .. "ScrollFrame", listing, "FauxScrollFrameTemplate")
   listing.ScrollFrame:SetPoint("TOPLEFT", listing, "TOPLEFT", 0, -HEADER_HEIGHT)
@@ -440,9 +440,9 @@ end
 
 -- A data provider frame with the given columns.
 -- definition = { layout = {...}, uniqueKey = function(entry), comparators = { field = comparatorFactory } }
-function Auctionator.Components.CreateDataProvider(definition)
+function Auctionary.Components.CreateDataProvider(definition)
   local provider = CreateFrame("Frame")
-  Auctionator.Compat.Mixin(provider, AuctionaryDataProviderMixin)
+  Auctionary.Compat.Mixin(provider, AuctionaryDataProviderMixin)
   provider:OnLoad()
   provider.processingIndex = 0
   provider.cacheUsedCount = 0
@@ -460,7 +460,7 @@ function Auctionator.Components.CreateDataProvider(definition)
   end
   function provider:Sort(fieldName, sortDirection)
     local factory = (definition.comparators and definition.comparators[fieldName])
-      or Auctionator.Utilities.StringComparator
+      or Auctionary.Utilities.StringComparator
     local comparator = factory(sortDirection, fieldName)
     table.sort(self.results, function(left, right)
       return comparator(left, right)
@@ -481,13 +481,13 @@ end
 -- hidden button while it is wanted, so the action runs as a real key press
 -- (buying and posting are only allowed then). Text boxes with the cursor in
 -- them still get their keys first.
-Auctionator.Keys = {}
+Auctionary.Keys = {}
 
 local count = 0
 
 -- handlers: { UP = function() end, ... }; isWanted(key) says per key whether
 -- it should be bound right now
-function Auctionator.Keys.Create(handlers, isWanted)
+function Auctionary.Keys.Create(handlers, isWanted)
   count = count + 1
   local owner = CreateFrame("Frame", nil, UIParent)
   local buttons, bound = {}, {}

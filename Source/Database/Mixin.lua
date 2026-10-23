@@ -1,15 +1,15 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-local Codec = Auctionator.DatabaseCodec
+local Codec = Auctionary.DatabaseCodec
 
 local function GetScanDay()
-  return (math.floor ((time() - Auctionator.Constants.SCAN_DAY_0) / (86400)));
+  return (math.floor ((time() - Auctionary.Constants.SCAN_DAY_0) / (86400)));
 end
 
-Auctionator.DatabaseMixin = {}
-function Auctionator.DatabaseMixin:Init(db)
+Auctionary.DatabaseMixin = {}
+function Auctionary.DatabaseMixin:Init(db)
   self.db = db
-  self.cutoffDay = GetScanDay() - Auctionator.Config.Get(Auctionator.Config.Options.PRICE_HISTORY_DAYS)
+  self.cutoffDay = GetScanDay() - Auctionary.Config.Get(Auctionary.Config.Options.PRICE_HISTORY_DAYS)
 
   -- Prices set during a scan are queued and written a few per frame so that a
   -- big scan doesn't freeze the client
@@ -48,7 +48,7 @@ function Auctionator.DatabaseMixin:Init(db)
 end
 
 -- Writes any queued prices immediately (used before logout)
-function Auctionator.DatabaseMixin:Flush()
+function Auctionary.DatabaseMixin:Flush()
   for dbKey, data in pairs(self.db) do
     if type(data) == "table" and data.pending then
       self.db[dbKey] = data.old
@@ -61,7 +61,7 @@ function Auctionator.DatabaseMixin:Flush()
   self.processor.queue = {}
 end
 
-function Auctionator.DatabaseMixin:_Get(dbKey)
+function Auctionary.DatabaseMixin:_Get(dbKey)
   if type(self.db[dbKey]) == "table" and self.db[dbKey].pending then
     local data = self.db[dbKey]
     self.db[dbKey] = self.db[dbKey].old
@@ -76,7 +76,7 @@ function Auctionator.DatabaseMixin:_Get(dbKey)
   end
 end
 
-function Auctionator.DatabaseMixin:_Queue(dbKey)
+function Auctionary.DatabaseMixin:_Queue(dbKey)
   table.insert(self.processor.queue, dbKey)
   if not self.processor.running then
     self.processor.running = true
@@ -84,7 +84,7 @@ function Auctionator.DatabaseMixin:_Queue(dbKey)
   end
 end
 
-function Auctionator.DatabaseMixin:SetPrice(dbKey, buyoutPrice, available)
+function Auctionary.DatabaseMixin:SetPrice(dbKey, buyoutPrice, available)
   if type(self.db[dbKey]) == "table" and self.db[dbKey].pending then
     self.db[dbKey].buyoutPrice = buyoutPrice
     self.db[dbKey].available = available
@@ -95,7 +95,9 @@ function Auctionator.DatabaseMixin:SetPrice(dbKey, buyoutPrice, available)
   end
 end
 
-function Auctionator.DatabaseMixin:_SetPrice(dbKey, buyoutPrice, available)
+function Auctionary.DatabaseMixin:_SetPrice(dbKey, buyoutPrice, available)
+  -- Tells the tooltips that prices changed
+  self.revision = (self.revision or 0) + 1
   local daysSinceZero = tostring(GetScanDay())
 
   local priceData = self.db[dbKey]
@@ -173,7 +175,7 @@ function Auctionator.DatabaseMixin:_SetPrice(dbKey, buyoutPrice, available)
   self.db[dbKey] = Codec.Serialize(priceData)
 end
 
-function Auctionator.DatabaseMixin:GetPrice(dbKey)
+function Auctionary.DatabaseMixin:GetPrice(dbKey)
   if self.db[dbKey] ~= nil then
     return self:_Get(dbKey).m
   else
@@ -181,7 +183,7 @@ function Auctionator.DatabaseMixin:GetPrice(dbKey)
   end
 end
 
-function Auctionator.DatabaseMixin:GetFirstPrice(dbKeys)
+function Auctionary.DatabaseMixin:GetFirstPrice(dbKeys)
   for _, dbKey in ipairs(dbKeys) do
     local price = self:GetPrice(dbKey)
     if price then
@@ -194,9 +196,9 @@ end
 --Takes all the items with a list of their prices, and determines the minimum
 --price.
 --  itemIndexes: { [dbKey] = { {price = number, available = number}, ... } }
-function Auctionator.DatabaseMixin:ProcessScan(itemIndexes)
-  Auctionator.Debug.Message("Auctionator.DatabaseMixin.ProcessScan")
-  local startTime = Auctionator.Compat.ProfileStop()
+function Auctionary.DatabaseMixin:ProcessScan(itemIndexes)
+  Auctionary.Debug.Message("Auctionary.DatabaseMixin.ProcessScan")
+  local startTime = Auctionary.Compat.ProfileStop()
 
   local count = 0
 
@@ -216,11 +218,11 @@ function Auctionator.DatabaseMixin:ProcessScan(itemIndexes)
     self:SetPrice(dbKey, minPrice, available)
   end
 
-  Auctionator.Debug.Message("Auctionator.DatabaseMixin: Processing time: " .. tostring(Auctionator.Compat.ProfileStop() - startTime))
+  Auctionary.Debug.Message("Auctionary.DatabaseMixin: Processing time: " .. tostring(Auctionary.Compat.ProfileStop() - startTime))
   return count
 end
 
-function Auctionator.DatabaseMixin:GetItemCount()
+function Auctionary.DatabaseMixin:GetItemCount()
   local count = 0
   for _, _ in pairs(self.db) do
     count = count + 1
@@ -229,7 +231,7 @@ function Auctionator.DatabaseMixin:GetItemCount()
   return count
 end
 
-function Auctionator.DatabaseMixin:GetPriceHistory(dbKey)
+function Auctionary.DatabaseMixin:GetPriceHistory(dbKey)
   if self.db[dbKey] == nil then
     return {}
   end
@@ -238,13 +240,13 @@ function Auctionator.DatabaseMixin:GetPriceHistory(dbKey)
 
   local results = {}
 
-  local sortedDays = Auctionator.Utilities.TableKeys(itemData.h)
+  local sortedDays = Auctionary.Utilities.TableKeys(itemData.h)
   table.sort(sortedDays, function(a, b) return tonumber(b) < tonumber(a) end)
 
   for _, day in ipairs(sortedDays) do
     table.insert(results, {
-     date = Auctionator.Utilities.PrettyDate(
-        tonumber(day) * 86400 + Auctionator.Constants.SCAN_DAY_0
+     date = Auctionary.Utilities.PrettyDate(
+        tonumber(day) * 86400 + Auctionary.Constants.SCAN_DAY_0
      ),
      rawDay = tonumber(day),
      minSeen = itemData.l[day] or itemData.h[day],
@@ -257,7 +259,7 @@ function Auctionator.DatabaseMixin:GetPriceHistory(dbKey)
 end
 
 -- Days since the item was last seen, nil if never
-function Auctionator.DatabaseMixin:GetPriceAge(dbKey)
+function Auctionary.DatabaseMixin:GetPriceAge(dbKey)
   local itemData = self.db[dbKey] and self:_Get(dbKey)
 
   if itemData == nil then
@@ -282,7 +284,7 @@ end
 -- Average of the lowest price over all scans of the last given number of
 -- days, today included. Several scans on one day all count. Returns the
 -- average and the number of scans, or nil without any scan on record.
-function Auctionator.DatabaseMixin:GetScanAverage(dbKey, days)
+function Auctionary.DatabaseMixin:GetScanAverage(dbKey, days)
   local entry = self.db[dbKey] and self:_Get(dbKey)
   if entry == nil then
     return nil
@@ -313,7 +315,7 @@ end
 
 -- Median of the daily prices of the last days (one value per day: the
 -- day's average scan price). A few boosted days hardly move it.
-function Auctionator.DatabaseMixin:GetScanMedian(dbKey, days)
+function Auctionary.DatabaseMixin:GetScanMedian(dbKey, days)
   local entry = self.db[dbKey] and self:_Get(dbKey)
   if entry == nil then
     return nil
@@ -340,7 +342,7 @@ function Auctionator.DatabaseMixin:GetScanMedian(dbKey, days)
   return math.floor(median), #values
 end
 
-function Auctionator.DatabaseMixin:GetMeanPrice(dbKey, days)
+function Auctionary.DatabaseMixin:GetMeanPrice(dbKey, days)
   local entry = self.db[dbKey] and self:_Get(dbKey)
 
   if entry == nil or days < 0 then

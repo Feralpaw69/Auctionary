@@ -1,12 +1,12 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.API.v1.GetDisenchantPriceByItemID(callerID, itemID)
-  Auctionator.API.InternalVerifyID(callerID)
+function Auctionary.API.v1.GetDisenchantPriceByItemID(callerID, itemID)
+  Auctionary.API.InternalVerifyID(callerID)
 
   if type(itemID) ~= "number" then
-    Auctionator.API.ComposeError(
+    Auctionary.API.ComposeError(
       callerID,
-      "Usage Auctionator.API.v1.GetAuctionPriceByItemID(string, number)"
+      "Usage Auctionary.API.v1.GetAuctionPriceByItemID(string, number)"
     )
   end
 
@@ -14,26 +14,26 @@ function Auctionator.API.v1.GetDisenchantPriceByItemID(callerID, itemID)
   local itemLink = itemInfo[2]
 
   if itemLink ~= nil then
-    return Auctionator.Enchant.GetDisenchantAuctionPrice(itemLink)
+    return Auctionary.Enchant.GetDisenchantAuctionPrice(itemLink)
   else
     return nil
   end
 end
 
-function Auctionator.API.v1.GetDisenchantPriceByItemLink(callerID, itemLink)
-  Auctionator.API.InternalVerifyID(callerID)
+function Auctionary.API.v1.GetDisenchantPriceByItemLink(callerID, itemLink)
+  Auctionary.API.InternalVerifyID(callerID)
 
   if type(itemLink) ~= "string" then
-    Auctionator.API.ComposeError(
+    Auctionary.API.ComposeError(
       callerID,
-      "Usage Auctionator.API.v1.GetAuctionPriceByItemLink(string, string)"
+      "Usage Auctionary.API.v1.GetAuctionPriceByItemLink(string, string)"
     )
   end
 
   local itemInfo = { GetItemInfo(itemLink) }
 
   if #itemInfo > 0 then
-    return Auctionator.Enchant.GetDisenchantAuctionPrice(itemLink)
+    return Auctionary.Enchant.GetDisenchantAuctionPrice(itemLink)
   else
     return nil
   end

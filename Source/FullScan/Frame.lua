@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Reads the whole auction house and stores the lowest price of every item.
 --
@@ -8,21 +8,21 @@ local Auctionator = Auctionary
 --   "pages"   50 auctions at a time, always possible but slower
 AuctionaryFullScanFrameMixin = {}
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 local GETALL_COOLDOWN = 15 * 60
 local GETALL_TIMEOUT = 60
 local BATCH_SIZE = 250
 local LINK_RETRIES = 4
 
 function AuctionaryFullScanFrameMixin:OnLoad()
-  Auctionator.Debug.Message("AuctionaryFullScanFrameMixin:OnLoad")
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryFullScanFrameMixin")
-  Auctionator.EventBus:Register(self, {
-    Auctionator.AH.Events.ScanResultsUpdate,
-    Auctionator.AH.Events.ScanAborted,
-    Auctionator.AH.Events.Closed,
+  Auctionary.Debug.Message("AuctionaryFullScanFrameMixin:OnLoad")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryFullScanFrameMixin")
+  Auctionary.EventBus:Register(self, {
+    Auctionary.AH.Events.ScanResultsUpdate,
+    Auctionary.AH.Events.ScanAborted,
+    Auctionary.AH.Events.Closed,
   })
-  self.state = Auctionator.SavedState
+  self.state = Auctionary.SavedState
   self.inProgress = false
   self:SetScript("OnEvent", self.OnEvent)
 end
@@ -39,24 +39,24 @@ function AuctionaryFullScanFrameMixin:IsInProgress()
 end
 
 function AuctionaryFullScanFrameMixin:CanGetAll()
-  return Auctionator.AH.CanQueryAll()
+  return Auctionary.AH.CanQueryAll()
 end
 
 -- mode: "getall", "pages" or nil to pick getall when the server allows it
 -- automatic: started by the addon itself (on opening the auction house)
 function AuctionaryFullScanFrameMixin:InitiateScan(mode, automatic)
   if self.inProgress then
-    Auctionator.Utilities.Message(AUCTIONARY_L_FULL_SCAN_IN_PROGRESS)
+    Auctionary.Utilities.Message(AUCTIONARY_L_FULL_SCAN_IN_PROGRESS)
     return
   end
-  if not Auctionator.State.AHOpen then
+  if not Auctionary.State.AHOpen then
     return
   end
 
   if mode == nil then
     mode = self:CanGetAll() and "getall" or "pages"
   elseif mode == "getall" and not self:CanGetAll() then
-    Auctionator.Utilities.Message(self:NextScanMessage())
+    Auctionary.Utilities.Message(self:NextScanMessage())
     return
   end
 
@@ -66,23 +66,23 @@ function AuctionaryFullScanFrameMixin:InitiateScan(mode, automatic)
   self:ResetData()
   self.startTime = GetTime()
 
-  Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanStart)
+  Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanStart)
 
   if mode == "getall" then
-    Auctionator.Utilities.Message(AUCTIONARY_L_STARTING_FULL_SCAN_REPLICATE)
+    Auctionary.Utilities.Message(AUCTIONARY_L_STARTING_FULL_SCAN_REPLICATE)
     self.state.TimeOfLastGetAllScan = time()
-    Auctionator.AH.AbortQuery()
+    Auctionary.AH.AbortQuery()
     self.waitingForGetAll = true
     self.getAllTime = GetTime()
     self:RegisterEvent("AUCTION_ITEM_LIST_UPDATE")
     self:SetScript("OnUpdate", self.OnUpdate)
     QueryAuctionItems("", "", "", nil, nil, nil, 0, nil, -1, true)
-    Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress, 0.1)
+    Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress, 0.1)
   else
-    Auctionator.Utilities.Message(AUCTIONARY_L_STARTING_FULL_SCAN_SUMMARY)
+    Auctionary.Utilities.Message(AUCTIONARY_L_STARTING_FULL_SCAN_SUMMARY)
     self.pageScan = true
-    Auctionator.AH.QueryAuctionItems({ searchString = "" })
-    Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress, 0)
+    Auctionary.AH.QueryAuctionItems({ searchString = "" })
+    Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress, 0)
   end
 end
 
@@ -110,15 +110,15 @@ function AuctionaryFullScanFrameMixin:Fail()
   self:SetScript("OnUpdate", nil)
   self:ResetData()
 
-  Auctionator.Utilities.Message(AUCTIONARY_L_FULL_SCAN_FAILED)
-  Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanFailed)
+  Auctionary.Utilities.Message(AUCTIONARY_L_FULL_SCAN_FAILED)
+  Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanFailed)
 end
 
 function AuctionaryFullScanFrameMixin:Abort()
   if self.inProgress then
     if self.pageScan then
       self.pageScan = false
-      Auctionator.AH.AbortQuery()
+      Auctionary.AH.AbortQuery()
     end
     self:Fail()
   end
@@ -130,7 +130,7 @@ function AuctionaryFullScanFrameMixin:AddAuction(info, itemLink, index)
   local count = info[AuctionItemInfo.Quantity] or 0
   local buyout = info[AuctionItemInfo.Buyout] or 0
 
-  Auctionator.CraftingInfo.NoteItemName(info[AuctionItemInfo.Name], itemLink)
+  Auctionary.CraftingInfo.NoteItemName(info[AuctionItemInfo.Name], itemLink)
 
   -- Lets others look at every auction of the scan (Sniping tab)
   if self.auctionCallback ~= nil then
@@ -145,7 +145,7 @@ function AuctionaryFullScanFrameMixin:AddAuction(info, itemLink, index)
   end
   -- The player's own auctions are not the market either
   if self.isOwnAuction == nil then
-    self.isOwnAuction = Auctionator.AH.GetOwnAuctionChecker()
+    self.isOwnAuction = Auctionary.AH.GetOwnAuctionChecker()
   end
   if self.isOwnAuction(info, itemLink) then
     return
@@ -153,7 +153,7 @@ function AuctionaryFullScanFrameMixin:AddAuction(info, itemLink, index)
 
   local price = math.ceil(buyout / count)
   local prices = self.prices
-  Auctionator.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
+  Auctionary.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
     if prices ~= self.prices then
       return -- answer for an older scan
     end
@@ -178,8 +178,8 @@ function AuctionaryFullScanFrameMixin:Finish()
   self:UnregisterEvent("AUCTION_ITEM_LIST_UPDATE")
   self:SetScript("OnUpdate", nil)
 
-  local count = Auctionator.Database:ProcessScan(self.prices)
-  Auctionator.Utilities.Message(AUCTIONARY_L_FINISHED_PROCESSING:format(count))
+  local count = Auctionary.Database:ProcessScan(self.prices)
+  Auctionary.Utilities.Message(AUCTIONARY_L_FINISHED_PROCESSING:format(count))
 
   local summary = {
     items = count,
@@ -191,33 +191,33 @@ function AuctionaryFullScanFrameMixin:Finish()
   }
   self:ResetData()
   -- When the whole auction house was last read (for prices that count as fresh)
-  Auctionator.State.LastFullScanTime = GetTime()
+  Auctionary.State.LastFullScanTime = GetTime()
 
-  Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress, 1)
-  Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanComplete, summary)
+  Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress, 1)
+  Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanComplete, summary)
 end
 
 ---- Page by page
 
 function AuctionaryFullScanFrameMixin:ReceiveEvent(eventName, results, gotAllResults, progress)
-  if eventName == Auctionator.AH.Events.ScanResultsUpdate then
+  if eventName == Auctionary.AH.Events.ScanResultsUpdate then
     if not self.pageScan then
       return
     end
     for _, auction in ipairs(results) do
       self:AddAuction(auction.info, auction.itemLink)
     end
-    Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress,
+    Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress,
       progress.page / progress.totalPages, progress)
     if gotAllResults then
       self:Finish()
     end
-  elseif eventName == Auctionator.AH.Events.ScanAborted then
+  elseif eventName == Auctionary.AH.Events.ScanAborted then
     if self.pageScan then
       self.pageScan = false
       self:Fail()
     end
-  elseif eventName == Auctionator.AH.Events.Closed then
+  elseif eventName == Auctionary.AH.Events.Closed then
     self:Abort()
   end
 end
@@ -230,7 +230,7 @@ function AuctionaryFullScanFrameMixin:OnEvent(eventName)
     self:UnregisterEvent("AUCTION_ITEM_LIST_UPDATE")
     self:SetScript("OnUpdate", nil)
 
-    Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress, 0.2)
+    Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress, 0.2)
 
     local pending = {}
     for index = 1, (GetNumAuctionItems("list")) do
@@ -243,7 +243,7 @@ end
 
 function AuctionaryFullScanFrameMixin:OnUpdate()
   if self.waitingForGetAll and GetTime() - self.getAllTime > GETALL_TIMEOUT then
-    Auctionator.Debug.Message("full scan: no answer to the getAll request")
+    Auctionary.Debug.Message("full scan: no answer to the getAll request")
     self:Fail()
   end
 end
@@ -268,23 +268,23 @@ function AuctionaryFullScanFrameMixin:ProcessBatch(pending, start, missing, atte
   end
 
   if self.getAllTotal > 0 then
-    Auctionator.EventBus:Fire(self, Auctionator.FullScan.Events.ScanProgress,
+    Auctionary.EventBus:Fire(self, Auctionary.FullScan.Events.ScanProgress,
       0.2 + 0.8 * math.min(self.auctionCount / self.getAllTotal, 1))
   end
 
   if last < #pending then
-    Auctionator.Compat.After(0.01, function()
+    Auctionary.Compat.After(0.01, function()
       self:ProcessBatch(pending, last + 1, missing, attempt)
     end)
   elseif #missing > 0 and attempt < LINK_RETRIES then
     -- The client is still loading some items, look at those again shortly
-    Auctionator.Compat.After(1, function()
+    Auctionary.Compat.After(1, function()
       self:ProcessBatch(missing, 1, {}, attempt + 1)
     end)
   else
     self.skipped = #missing
     -- Item data requested by DBKeyFromLink may still be arriving
-    Auctionator.Compat.After(0.5, function()
+    Auctionary.Compat.After(0.5, function()
       if self.inProgress then
         self:Finish()
       end
@@ -293,34 +293,34 @@ function AuctionaryFullScanFrameMixin:ProcessBatch(pending, start, missing, atte
 end
 
 -- Scans as soon as the auction house is opened, if the server allows a scan
--- of everything right now (Auctionator.Config.Options.AUTOSCAN)
+-- of everything right now (Auctionary.Config.Options.AUTOSCAN)
 local autoScanListener = {}
 function autoScanListener:ReceiveEvent()
-  if Auctionator.SavedState ~= nil and not Auctionator.SavedState.AutoscanDefaultApplied then
+  if Auctionary.SavedState ~= nil and not Auctionary.SavedState.AutoscanDefaultApplied then
     -- Switched on once; /aury config autoscan_2 switches it off again
-    Auctionator.SavedState.AutoscanDefaultApplied = true
-    Auctionator.Config.Set(Auctionator.Config.Options.AUTOSCAN, true)
+    Auctionary.SavedState.AutoscanDefaultApplied = true
+    Auctionary.Config.Set(Auctionary.Config.Options.AUTOSCAN, true)
   end
-  if not Auctionator.Config.Get(Auctionator.Config.Options.AUTOSCAN) then
+  if not Auctionary.Config.Get(Auctionary.Config.Options.AUTOSCAN) then
     return
   end
   -- A moment later, so the window is up and other addons are done opening
-  Auctionator.Compat.After(1, function()
-    local frame = Auctionator.FullScan.Frame
-    if frame ~= nil and Auctionator.State.AHOpen and not frame:IsInProgress() and
-       not Auctionator.AH.IsQueryActive() and frame:CanGetAll() then
+  Auctionary.Compat.After(1, function()
+    local frame = Auctionary.FullScan.Frame
+    if frame ~= nil and Auctionary.State.AHOpen and not frame:IsInProgress() and
+       not Auctionary.AH.IsQueryActive() and frame:CanGetAll() then
       frame:InitiateScan("getall", true)
     end
   end)
 end
-Auctionator.EventBus:Register(autoScanListener, { Auctionator.AH.Events.Opened })
+Auctionary.EventBus:Register(autoScanListener, { Auctionary.AH.Events.Opened })
 
-function Auctionator.FullScan.Initialize()
-  if Auctionator.FullScan.Frame ~= nil then
+function Auctionary.FullScan.Initialize()
+  if Auctionary.FullScan.Frame ~= nil then
     return
   end
   local frame = CreateFrame("Frame", "AuctionaryFullScanFrame", UIParent)
-  Auctionator.Compat.Mixin(frame, AuctionaryFullScanFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionaryFullScanFrameMixin)
   frame:OnLoad()
-  Auctionator.FullScan.Frame = frame
+  Auctionary.FullScan.Frame = frame
 end

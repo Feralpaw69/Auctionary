@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- GetItemInfo has no bind type in 3.3.5, so the item's tooltip is read with a
 -- hidden tooltip instead. Results are cached per item ID.
@@ -16,8 +16,8 @@ local cache = {}
 
 -- Is this kind of item bound when you obtain it (so it can never be auctioned)?
 -- Returns false for items that are not in the item cache yet.
-function Auctionator.Utilities.IsBound(itemLinkOrID)
-  local itemID = Auctionator.Compat.GetItemIDFromLink(itemLinkOrID)
+function Auctionary.Utilities.IsBound(itemLinkOrID)
+  local itemID = Auctionary.Compat.GetItemIDFromLink(itemLinkOrID)
   if itemID == nil then
     return true
   end
@@ -27,9 +27,9 @@ function Auctionator.Utilities.IsBound(itemLinkOrID)
   if GetItemInfo(itemID) == nil then
     return false
   end
-  local tooltip = Auctionator.Compat.GetScanTooltip()
+  local tooltip = Auctionary.Compat.GetScanTooltip()
   tooltip:SetHyperlink("item:" .. itemID .. ":0:0:0:0:0:0:0")
-  local result = Auctionator.Compat.ScanTooltipHasLine(tooltip, boundTexts)
+  local result = Auctionary.Compat.ScanTooltipHasLine(tooltip, boundTexts)
   cache[itemID] = result
   return result
 end

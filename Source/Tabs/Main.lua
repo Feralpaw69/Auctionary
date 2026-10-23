@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
--- Adds the Auctionator tabs after the tabs that are already on the auction
+-- Adds the Auctionary tabs after the tabs that are already on the auction
 -- house window (Blizzard's, and those of other addons). The window itself and
 -- AuctionFrameTab_OnClick are left as they are; the addon only watches which
 -- tab gets selected.
@@ -8,7 +8,7 @@ local TAB_DETAILS = {
   { name = "Shopping",    label = AUCTIONARY_L_SHOPPING_TAB,   header = AUCTIONARY_L_SHOPPING_TAB_HEADER },
   { name = "Selling",     label = AUCTIONARY_L_SELLING_TAB,    header = AUCTIONARY_L_SELLING_TAB_HEADER },
   { name = "Cancelling",  label = AUCTIONARY_L_CANCELLING_TAB, header = AUCTIONARY_L_CANCELLING_TAB_HEADER },
-  { name = "Auctionator", label = "Settings/Info",                     header = "Auctionary - Settings/Info" },
+  { name = "Auctionary", label = "Settings/Info",                     header = "Auctionary - Settings/Info" },
 }
 
 local BACKGROUND = {
@@ -37,7 +37,7 @@ end
 local contentCreators = {}
 
 -- creator(panel) builds the content of a tab the first time it is needed
-function Auctionator.Tabs.RegisterContent(name, creator)
+function Auctionary.Tabs.RegisterContent(name, creator)
   contentCreators[name] = creator
 end
 
@@ -114,8 +114,8 @@ local function CreatePanel(details)
   local sinceCheck = 0
   panel:SetScript("OnShow", function()
     CheckPanelLevels(panel, true)
-    if Auctionator.Tabs.AddEscapeToBoxes ~= nil then
-      pcall(Auctionator.Tabs.AddEscapeToBoxes, panel)
+    if Auctionary.Tabs.AddEscapeToBoxes ~= nil then
+      pcall(Auctionary.Tabs.AddEscapeToBoxes, panel)
     end
     if Elv.SkinPanel then
       Elv.SkinPanel(panel)
@@ -163,7 +163,7 @@ local function CreateTab(details)
   PanelTemplates_SetNumTabs(AuctionFrame, index)
   PanelTemplates_EnableTab(AuctionFrame, index)
 
-  tab.auctionatorModernTab = details.name
+  tab.auctionaryTab = details.name
   tab.panel = CreatePanel(details)
   if contentCreators[details.name] ~= nil then
     tab.panel.Placeholder:Hide()
@@ -175,7 +175,7 @@ end
 ---- Backgrounds
 -- Colours of the dark area, to tell the addon's tabs from the standard
 -- auction house at a glance. top/bottom: gradient colours, border: frame line.
-Auctionator.Tabs.Backgrounds = {
+Auctionary.Tabs.Backgrounds = {
   { key = "black",    name = "Black (default)", tab = { 0.92, 0.96, 1.0 } },
   { key = "midnight", name = "Midnight Blue", top = { 0.05, 0.12, 0.30 }, bottom = { 0.01, 0.02, 0.07 }, border = { 0.35, 0.55, 1.0 }, tab = { 0.35, 0.6, 1.0 } },
   { key = "crimson",  name = "Crimson Gold",  top = { 0.30, 0.05, 0.03 }, bottom = { 0.07, 0.01, 0.01 }, border = { 1.0, 0.78, 0.2 }, tab = { 1.0, 0.3, 0.25 } },
@@ -206,7 +206,7 @@ do
     if LOCALIZED_CLASS_NAMES_MALE ~= nil and LOCALIZED_CLASS_NAMES_MALE[token] ~= nil then
       name = LOCALIZED_CLASS_NAMES_MALE[token]
     end
-    table.insert(Auctionator.Tabs.Backgrounds, {
+    table.insert(Auctionary.Tabs.Backgrounds, {
       key = "class_" .. token,
       name = name,
       top = { r * 0.32, g * 0.32, b * 0.32 },
@@ -217,20 +217,20 @@ do
   end
 end
 
-function Auctionator.Tabs.SetBackground(key)
-  Auctionator.Config.Set(Auctionator.Config.Options.TAB_BACKGROUND, key)
-  Auctionator.Tabs.ApplyBackground()
-  return Auctionator.Tabs.GetBackground().name
+function Auctionary.Tabs.SetBackground(key)
+  Auctionary.Config.Set(Auctionary.Config.Options.TAB_BACKGROUND, key)
+  Auctionary.Tabs.ApplyBackground()
+  return Auctionary.Tabs.GetBackground().name
 end
 
-function Auctionator.Tabs.GetBackground()
-  local key = Auctionator.Config.Get(Auctionator.Config.Options.TAB_BACKGROUND)
-  for index, background in ipairs(Auctionator.Tabs.Backgrounds) do
+function Auctionary.Tabs.GetBackground()
+  local key = Auctionary.Config.Get(Auctionary.Config.Options.TAB_BACKGROUND)
+  for index, background in ipairs(Auctionary.Tabs.Backgrounds) do
     if background.key == key then
       return background, index
     end
   end
-  return Auctionator.Tabs.Backgrounds[1], 1
+  return Auctionary.Tabs.Backgrounds[1], 1
 end
 
 -- Colours the artwork of a tab button at the bottom of the window
@@ -256,13 +256,13 @@ local function TintTabButton(button, colour)
   end
 end
 
-function Auctionator.Tabs.ApplyBackground()
-  local background = Auctionator.Tabs.GetBackground()
+function Auctionary.Tabs.ApplyBackground()
+  local background = Auctionary.Tabs.GetBackground()
   for _, tab in ipairs(tabs) do
     TintTabButton(tab, background.tab)
   end
-  TintTabButton(Auctionator.Tabs.State.scanButton, background.tab)
-  TintTabButton(Auctionator.Tabs.State.goldButton, background.tab)
+  TintTabButton(Auctionary.Tabs.State.scanButton, background.tab)
+  TintTabButton(Auctionary.Tabs.State.goldButton, background.tab)
   for _, tab in ipairs(tabs) do
     local inset = tab.panel.Inset
     if background.top ~= nil then
@@ -279,11 +279,11 @@ function Auctionator.Tabs.ApplyBackground()
 end
 
 -- Next background in the list; returns its name
-function Auctionator.Tabs.CycleBackground()
-  local _, index = Auctionator.Tabs.GetBackground()
-  local nextBackground = Auctionator.Tabs.Backgrounds[index % #Auctionator.Tabs.Backgrounds + 1]
-  Auctionator.Config.Set(Auctionator.Config.Options.TAB_BACKGROUND, nextBackground.key)
-  Auctionator.Tabs.ApplyBackground()
+function Auctionary.Tabs.CycleBackground()
+  local _, index = Auctionary.Tabs.GetBackground()
+  local nextBackground = Auctionary.Tabs.Backgrounds[index % #Auctionary.Tabs.Backgrounds + 1]
+  Auctionary.Config.Set(Auctionary.Config.Options.TAB_BACKGROUND, nextBackground.key)
+  Auctionary.Tabs.ApplyBackground()
   return nextBackground.name
 end
 
@@ -306,28 +306,28 @@ local function CreateArrow(direction)
   arrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
   arrow:SetScript("OnClick", function()
     PlaySound("igMainMenuOptionCheckBoxOn")
-    Auctionator.Tabs.Scroll(direction == "Left" and -1 or 1)
+    Auctionary.Tabs.Scroll(direction == "Left" and -1 or 1)
   end)
   arrow:Hide()
   return arrow
 end
 
-function Auctionator.Tabs.UpdateGoldButton()
-  local gold = Auctionator.Tabs.State.goldButton
+function Auctionary.Tabs.UpdateGoldButton()
+  local gold = Auctionary.Tabs.State.goldButton
   if gold == nil then
     return
   end
-  if Auctionator.Config.Get(Auctionator.Config.Options.GOLD_TRACKER_BUTTON) then
+  if Auctionary.Config.Get(Auctionary.Config.Options.GOLD_TRACKER_BUTTON) then
     gold:Show()
   else
     gold:Hide()
   end
-  if Auctionator.Tabs.State.created then
-    Auctionator.Tabs.Layout()
+  if Auctionary.Tabs.State.created then
+    Auctionary.Tabs.Layout()
   end
 end
 
-function Auctionator.Tabs.Layout()
+function Auctionary.Tabs.Layout()
   if #tabs == 0 then
     return
   end
@@ -335,7 +335,7 @@ function Auctionator.Tabs.Layout()
     Elv.SkinTabs()
   end
   local previous = _G["AuctionFrameTab" .. (tabs[1]:GetID() - 1)]
-  local scanButton = Auctionator.Tabs.State.scanButton
+  local scanButton = Auctionary.Tabs.State.scanButton
   if previous == nil then
     return
   end
@@ -347,7 +347,7 @@ function Auctionator.Tabs.Layout()
   -- Width that is free for our tabs
   local available
   local startX = previous:GetRight()
-  local goldButton = Auctionator.Tabs.State.goldButton
+  local goldButton = Auctionary.Tabs.State.goldButton
   local endX = (goldButton and goldButton:IsShown() and goldButton:GetLeft()) or (scanButton and scanButton:GetLeft())
   if startX ~= nil and endX ~= nil then
     available = endX - startX - FirstTabGap() - 4
@@ -395,33 +395,33 @@ function Auctionator.Tabs.Layout()
     leftArrow:Hide()
     rightArrow:Hide()
   end
-  Auctionator.Tabs.State.lastVisible = lastVisible
-  Auctionator.Tabs.State.needsScroll = needsScroll
+  Auctionary.Tabs.State.lastVisible = lastVisible
+  Auctionary.Tabs.State.needsScroll = needsScroll
 end
 
-function Auctionator.Tabs.Scroll(delta)
-  if not Auctionator.Tabs.State.needsScroll then
+function Auctionary.Tabs.Scroll(delta)
+  if not Auctionary.Tabs.State.needsScroll then
     return
   end
-  if delta > 0 and (Auctionator.Tabs.State.lastVisible or #tabs) >= #tabs then
+  if delta > 0 and (Auctionary.Tabs.State.lastVisible or #tabs) >= #tabs then
     return
   end
   firstVisible = math.max(1, math.min(firstVisible + delta, #tabs))
-  Auctionator.Tabs.Layout()
+  Auctionary.Tabs.Layout()
 end
 
 -- Scrolls until the tab with this name can be seen
 local function EnsureVisible(name)
-  if not Auctionator.Tabs.State.needsScroll then
+  if not Auctionary.Tabs.State.needsScroll then
     return
   end
   for index, tab in ipairs(tabs) do
-    if tab.auctionatorModernTab == name then
+    if tab.auctionaryTab == name then
       local guard = 0
-      while guard < #tabs and (index < firstVisible or index > (Auctionator.Tabs.State.lastVisible or #tabs)) do
+      while guard < #tabs and (index < firstVisible or index > (Auctionary.Tabs.State.lastVisible or #tabs)) do
         guard = guard + 1
         firstVisible = firstVisible + ((index < firstVisible) and -1 or 1)
-        Auctionator.Tabs.Layout()
+        Auctionary.Tabs.Layout()
       end
       return
     end
@@ -445,51 +445,51 @@ local function OnTabSelected(selectedTab)
       _G[textureName]:SetTexture(file)
     end
   end
-  Auctionator.Tabs.State.selected = isOurs and selectedTab.auctionatorModernTab or nil
+  Auctionary.Tabs.State.selected = isOurs and selectedTab.auctionaryTab or nil
   -- The client redraws the tab buttons on every switch
-  Auctionator.Tabs.ApplyBackground()
+  Auctionary.Tabs.ApplyBackground()
 end
 
-function Auctionator.Tabs.Initialize()
-  if Auctionator.Tabs.State.created then
+function Auctionary.Tabs.Initialize()
+  if Auctionary.Tabs.State.created then
     return
   end
   if AuctionFrame == nil or AuctionFrame.numTabs == nil then
     return
   end
-  Auctionator.Tabs.State.created = true
+  Auctionary.Tabs.State.created = true
 
   for _, details in ipairs(TAB_DETAILS) do
     local tab = CreateTab(details)
     table.insert(tabs, tab)
-    Auctionator.Tabs.State.knownTabs[details.name] = tab
+    Auctionary.Tabs.State.knownTabs[details.name] = tab
   end
 
   hooksecurefunc("AuctionFrameTab_OnClick", OnTabSelected)
 
-  Auctionator.Tabs.CreateScanButton(tabs[#tabs])
+  Auctionary.Tabs.CreateScanButton(tabs[#tabs])
 
   for _, tab in ipairs(tabs) do
     tab:EnableMouseWheel(true)
     tab:SetScript("OnMouseWheel", function(_, delta)
-      Auctionator.Tabs.Scroll(delta > 0 and -1 or 1)
+      Auctionary.Tabs.Scroll(delta > 0 and -1 or 1)
     end)
   end
   -- Crimson Gold is switched on once; a later choice of the user is kept
-  if Auctionator.SavedState ~= nil and not Auctionator.SavedState.CrimsonBackgroundApplied then
-    Auctionator.SavedState.CrimsonBackgroundApplied = true
-    Auctionator.Config.Set(Auctionator.Config.Options.TAB_BACKGROUND, "crimson")
+  if Auctionary.SavedState ~= nil and not Auctionary.SavedState.CrimsonBackgroundApplied then
+    Auctionary.SavedState.CrimsonBackgroundApplied = true
+    Auctionary.Config.Set(Auctionary.Config.Options.TAB_BACKGROUND, "crimson")
   end
-  Auctionator.Tabs.ApplyBackground()
-  Auctionator.Tabs.Layout()
+  Auctionary.Tabs.ApplyBackground()
+  Auctionary.Tabs.Layout()
   -- Once more when every addon has placed its tabs and sizes are known
-  Auctionator.Compat.After(0.2, Auctionator.Tabs.Layout)
+  Auctionary.Compat.After(0.2, Auctionary.Tabs.Layout)
 end
 
 -- Looks like one more tab, but starts a full scan instead of showing a page
 local SCAN_TEXT = AUCTIONARY_L_FULL_SCAN_BUTTON or "Full Scan"
 
-function Auctionator.Tabs.CreateScanButton(lastTab)
+function Auctionary.Tabs.CreateScanButton(lastTab)
   local button = CreateFrame("Button", "AuctionaryScanTabButton", AuctionFrame, "CharacterFrameTabButtonTemplate")
   button:SetText(SCAN_TEXT)
   -- At the right end of the tab bar, as far from the window's right edge as
@@ -500,7 +500,7 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
 
   button:RegisterForClicks("LeftButtonUp")
   button:SetScript("OnClick", function()
-    local scanFrame = Auctionator.FullScan.Frame
+    local scanFrame = Auctionary.FullScan.Frame
     if scanFrame == nil then
       return
     end
@@ -512,8 +512,8 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
     elseif scanFrame:CanGetAll() then
       scanFrame:InitiateScan("getall")
     else
-      Auctionator.Utilities.Message(scanFrame:NextScanMessage())
-      Auctionator.Utilities.Message("Shift-click the button to scan page by page instead (slow).")
+      Auctionary.Utilities.Message(scanFrame:NextScanMessage())
+      Auctionary.Utilities.Message("Shift-click the button to scan page by page instead (slow).")
     end
   end)
   button:SetScript("OnEnter", function(self)
@@ -531,20 +531,20 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
 
   local listener = {}
   function listener:ReceiveEvent(eventName, fraction)
-    if eventName == Auctionator.FullScan.Events.ScanProgress and fraction < 1 then
+    if eventName == Auctionary.FullScan.Events.ScanProgress and fraction < 1 then
       button:SetText(SCAN_TEXT .. " " .. math.floor(fraction * 100) .. "%")
-    elseif eventName == Auctionator.FullScan.Events.ScanStart then
+    elseif eventName == Auctionary.FullScan.Events.ScanStart then
       button:SetText(SCAN_TEXT .. " 0%")
     else
       button:SetText(SCAN_TEXT)
     end
     PanelTemplates_TabResize(button, TAB_PADDING)
   end
-  Auctionator.EventBus:Register(listener, {
-    Auctionator.FullScan.Events.ScanStart,
-    Auctionator.FullScan.Events.ScanProgress,
-    Auctionator.FullScan.Events.ScanComplete,
-    Auctionator.FullScan.Events.ScanFailed,
+  Auctionary.EventBus:Register(listener, {
+    Auctionary.FullScan.Events.ScanStart,
+    Auctionary.FullScan.Events.ScanProgress,
+    Auctionary.FullScan.Events.ScanComplete,
+    Auctionary.FullScan.Events.ScanFailed,
   })
 
   -- Countdown of the quick scan cooldown on the button itself
@@ -555,7 +555,7 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
       return
     end
     elapsedTotal = 0
-    local scanFrame = Auctionator.FullScan.Frame
+    local scanFrame = Auctionary.FullScan.Frame
     if scanFrame == nil or scanFrame:IsInProgress() then
       shownText = nil
       return
@@ -571,11 +571,11 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
       shownText = text
       button:SetText(text)
       PanelTemplates_TabResize(button, TAB_PADDING)
-      Auctionator.Tabs.Layout()
+      Auctionary.Tabs.Layout()
     end
   end)
 
-  Auctionator.Tabs.State.scanButton = button
+  Auctionary.Tabs.State.scanButton = button
 
   -- Gold Tracker: a tab with a chart symbol, left of the scan button
   local gold = CreateFrame("Button", "AuctionaryGoldTrackerButton", AuctionFrame, "CharacterFrameTabButtonTemplate")
@@ -591,7 +591,7 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
   gold:RegisterForClicks("LeftButtonUp")
   gold:SetScript("OnClick", function()
     PlaySound("igCharacterInfoTab")
-    Auctionator.Components.ShowGoldTracker()
+    Auctionary.Components.ShowGoldTracker()
   end)
   gold:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -600,12 +600,12 @@ function Auctionator.Tabs.CreateScanButton(lastTab)
     GameTooltip:Show()
   end)
   gold:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  Auctionator.Tabs.State.goldButton = gold
-  Auctionator.Tabs.UpdateGoldButton()
+  Auctionary.Tabs.State.goldButton = gold
+  Auctionary.Tabs.UpdateGoldButton()
 end
 
-function Auctionator.Tabs.Select(name)
-  local tab = Auctionator.Tabs.State.knownTabs[name]
+function Auctionary.Tabs.Select(name)
+  local tab = Auctionary.Tabs.State.knownTabs[name]
   if tab ~= nil then
     EnsureVisible(name)
     AuctionFrameTab_OnClick(tab)
@@ -616,20 +616,20 @@ local listener = {}
 function listener:ReceiveEvent()
   -- One frame later, so tabs of addons that react to the same event keep
   -- the positions they are used to
-  Auctionator.Compat.After(0, function()
-    Auctionator.Tabs.Initialize()
-    if Auctionator.Tabs.State.created then
+  Auctionary.Compat.After(0, function()
+    Auctionary.Tabs.Initialize()
+    if Auctionary.Tabs.State.created then
       local function refresh()
-        Auctionator.Tabs.Layout()
-        Auctionator.Tabs.ApplyBackground()
+        Auctionary.Tabs.Layout()
+        Auctionary.Tabs.ApplyBackground()
       end
       refresh()
-      Auctionator.Compat.After(0.2, refresh)
-      Auctionator.Compat.After(1, refresh)
+      Auctionary.Compat.After(0.2, refresh)
+      Auctionary.Compat.After(1, refresh)
     end
   end)
 end
-Auctionator.EventBus:Register(listener, { Auctionator.AH.Events.Opened })
+Auctionary.EventBus:Register(listener, { Auctionary.AH.Events.Opened })
 
 
 ---- ElvUI
@@ -694,7 +694,7 @@ local function SkinTree(S, frame)
 end
 
 -- Any window of the addon (also used by the small dialogs)
-function Auctionator.Tabs.SkinForElvUI(frame, isWindow)
+function Auctionary.Tabs.SkinForElvUI(frame, isWindow)
   local E, S = GetElvUI()
   if E == nil then
     return
@@ -719,7 +719,7 @@ function Elv.SkinTabs()
       pcall(S.HandleTab, S, tab)
     end
   end
-  for _, button in ipairs({ Auctionator.Tabs.State.scanButton, Auctionator.Tabs.State.goldButton }) do
+  for _, button in ipairs({ Auctionary.Tabs.State.scanButton, Auctionary.Tabs.State.goldButton }) do
     if button ~= nil and not elvDone[button] then
       elvDone[button] = true
       pcall(S.HandleTab, S, button)
@@ -775,7 +775,7 @@ function Elv.PanelHidden(panel)
     return
   end
   -- Back to ElvUI's place unless another of our tabs takes over right away
-  Auctionator.Compat.After(0.05, function()
+  Auctionary.Compat.After(0.05, function()
     for _, tab in ipairs(tabs) do
       if tab.panel ~= nil and tab.panel:IsShown() then
         return
@@ -821,7 +821,7 @@ local function AddEscape(frame)
     end
   end
 end
-Auctionator.Tabs.AddEscapeToBoxes = AddEscape
+Auctionary.Tabs.AddEscapeToBoxes = AddEscape
 
 local focusGuard = CreateFrame("Frame")
 local sinceFocusCheck = 0
@@ -858,16 +858,16 @@ end)
 -- given back right away instead of whenever the client gets around to it.
 local memoryListener = {}
 function memoryListener:ReceiveEvent(eventName)
-  if eventName == Auctionator.AH.Events.Closed and Auctionator.Search.ClearNameIndex ~= nil then
-    Auctionator.Search.ClearNameIndex()
+  if eventName == Auctionary.AH.Events.Closed and Auctionary.Search.ClearNameIndex ~= nil then
+    Auctionary.Search.ClearNameIndex()
   end
-  Auctionator.Compat.After(3, function()
+  Auctionary.Compat.After(3, function()
     if not (InCombatLockdown ~= nil and InCombatLockdown()) then
       collectgarbage("collect")
     end
   end)
 end
-Auctionator.EventBus:Register(memoryListener, {
-  Auctionator.AH.Events.Closed,
-  Auctionator.FullScan.Events.ScanComplete,
+Auctionary.EventBus:Register(memoryListener, {
+  Auctionary.AH.Events.Closed,
+  Auctionary.FullScan.Events.ScanComplete,
 })

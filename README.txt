@@ -1,4 +1,4 @@
-AUCTIONARY 1.48 - START GUIDE
+AUCTIONARY 1.51 - START GUIDE
 ============================
 
 
@@ -57,8 +57,8 @@ GOOD TO KNOW BEFORE YOU START
   average. Hovering shows by how many percent.
 
 * Values are estimates.
-  Disenchant, Prospect and Mill use drop chances from the original
-  addon and current asking prices, not what actually sells.
+  Disenchant, Prospect and Mill use known drop chances and current
+  asking prices, not what actually sells.
 
 * Your own auctions are ignored when prices are saved.
 
@@ -89,5 +89,5 @@ INSTALLING AND UPDATING
 
 * /aury lists the chat commands.
 
-* It runs alongside TradeSkillMaster. Running it together with the old
-  Auctionator works but crowds the tab bar.
+* It runs alongside TradeSkillMaster. Running it together with other
+  auction house addons works but crowds the tab bar.

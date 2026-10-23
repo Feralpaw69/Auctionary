@@ -1,16 +1,16 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionaryMultiSearchMixin = {}
 
 function AuctionaryMultiSearchMixin:InitSearch(completionCallback, incrementCallback)
-  Auctionator.Debug.Message("AuctionaryMultiSearchMixin:InitSearch()")
+  Auctionary.Debug.Message("AuctionaryMultiSearchMixin:InitSearch()")
 
   self.complete = true
   self.onSearchComplete = completionCallback or function()
-    Auctionator.Debug.Message("Search completed.")
+    Auctionary.Debug.Message("Search completed.")
   end
   self.onNextSearch = incrementCallback or function()
-    Auctionator.Debug.Message("Next search.")
+    Auctionary.Debug.Message("Next search.")
   end
 end
 
@@ -19,7 +19,7 @@ function AuctionaryMultiSearchMixin:OnEvent(event, ...)
 end
 
 function AuctionaryMultiSearchMixin:Search(terms, config)
-  Auctionator.Debug.Message("AuctionaryMultiSearchMixin:Search()", terms)
+  Auctionary.Debug.Message("AuctionaryMultiSearchMixin:Search()", terms)
 
   self.complete = false
   self.partialResults = {}
@@ -42,7 +42,7 @@ function AuctionaryMultiSearchMixin:AbortSearch()
 end
 
 function AuctionaryMultiSearchMixin:AddResults(results)
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:AddResults()")
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:AddResults()")
 
   if #results > 0 then
     self.anyResultsForThisTerm = true
@@ -59,7 +59,7 @@ function AuctionaryMultiSearchMixin:AddResults(results)
 end
 
 function AuctionaryMultiSearchMixin:NoResultsForTermCheck()
-  if not Auctionator.Config.Get(Auctionator.Config.Options.SHOPPING_LIST_MISSING_TERMS) then
+  if not Auctionary.Config.Get(Auctionary.Config.Options.SHOPPING_LIST_MISSING_TERMS) then
     return
   end
 
@@ -83,7 +83,7 @@ function AuctionaryMultiSearchMixin:NextSearch()
     self.partialResults = {}
     self:GetSearchProvider()(self:GetNextSearchParameter())
   else
-    Auctionator.Debug.Message("AuctionaryMultiSearchMixin:NextSearch Complete")
+    Auctionary.Debug.Message("AuctionaryMultiSearchMixin:NextSearch Complete")
 
     self:NoResultsForTermCheck()
 

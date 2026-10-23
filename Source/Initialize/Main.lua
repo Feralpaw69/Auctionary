@@ -1,17 +1,17 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local frame = CreateFrame("Frame", "AuctionaryInitializeFrame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
 
-frame:SetScript("OnEvent", function(self, event)
+frame:SetScript("OnEvent", function(self, event, addonName)
   if event == "PLAYER_LOGIN" then
-    Auctionator.Debug.Message("Auctionary: PLAYER_LOGIN")
-    Auctionator.Variables.Initialize()
-    Auctionator.Tooltip.Initialize()
+    Auctionary.Debug.Message("Auctionary: PLAYER_LOGIN")
+    Auctionary.Variables.Initialize()
+    Auctionary.Tooltip.Initialize()
 
-    Auctionator.SlashCmd.Initialize()
+    Auctionary.SlashCmd.Initialize()
   elseif event == "PLAYER_LOGOUT" then
-    Auctionator.Variables.Commit()
+    Auctionary.Variables.Commit()
   end
 end)

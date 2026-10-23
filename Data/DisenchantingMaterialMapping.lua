@@ -1,7 +1,7 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Constants.DisenchantingMatMapping = {
-  [ Auctionator.Constants.DisenchantMats.LESSER_CEL ] = Auctionator.Constants.DisenchantMats.GREATER_CEL,
-  [ Auctionator.Constants.DisenchantMats.LESSER_COSMIC ] = Auctionator.Constants.DisenchantMats.GREATER_COSMIC,
-  [ Auctionator.Constants.DisenchantMats.LESSER_PLANAR ] = Auctionator.Constants.DisenchantMats.GREATER_PLANAR
+Auctionary.Constants.DisenchantingMatMapping = {
+  [ Auctionary.Constants.DisenchantMats.LESSER_CEL ] = Auctionary.Constants.DisenchantMats.GREATER_CEL,
+  [ Auctionary.Constants.DisenchantMats.LESSER_COSMIC ] = Auctionary.Constants.DisenchantMats.GREATER_COSMIC,
+  [ Auctionary.Constants.DisenchantMats.LESSER_PLANAR ] = Auctionary.Constants.DisenchantMats.GREATER_PLANAR
 }

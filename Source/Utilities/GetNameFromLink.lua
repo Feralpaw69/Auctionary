@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.GetNameFromLink(itemLink)
+function Auctionary.Utilities.GetNameFromLink(itemLink)
   return string.match(itemLink, "h%[(.*)%]|h")
 end

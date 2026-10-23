@@ -1,21 +1,21 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- What an item is worth when it is disenchanted, prospected or milled, from
 -- the prices of the last scans. The drop tables come from the original addon.
-local Mats = Auctionator.Constants.DisenchantMats
+local Mats = Auctionary.Constants.DisenchantMats
 local weaponClassName, armorClassName = GetAuctionItemClasses()
 
 local function GetPrice(itemID)
-  if Auctionator.Database == nil then
+  if Auctionary.Database == nil then
     return nil
   end
-  return Auctionator.Database:GetPrice(tostring(itemID))
+  return Auctionary.Database:GetPrice(tostring(itemID))
 end
 
 -- Lesser essences can be made from greater ones (3 for 1)
 local function GetDisenchantMatPrice(itemID)
   local price = GetPrice(itemID)
-  local greater = Auctionator.Constants.DisenchantingMatMapping[itemID]
+  local greater = Auctionary.Constants.DisenchantingMatMapping[itemID]
   if greater ~= nil then
     local greaterPrice = GetPrice(greater)
     if price ~= nil and greaterPrice ~= nil and price * 3 > greaterPrice then
@@ -45,14 +45,14 @@ local function IDFromLink(itemLink)
 end
 
 local function Learned()
-  if Auctionator.SavedState == nil then
+  if Auctionary.SavedState == nil then
     return nil
   end
-  Auctionator.SavedState.NotDisenchantable = Auctionator.SavedState.NotDisenchantable or {}
-  return Auctionator.SavedState.NotDisenchantable
+  Auctionary.SavedState.NotDisenchantable = Auctionary.SavedState.NotDisenchantable or {}
+  return Auctionary.SavedState.NotDisenchantable
 end
 
-function Auctionator.Enchant.IsNotDisenchantable(itemLink)
+function Auctionary.Enchant.IsNotDisenchantable(itemLink)
   local itemID = IDFromLink(itemLink)
   if itemID == nil then
     return false
@@ -63,7 +63,7 @@ end
 
 -- Looks through the lines of a tooltip that shows the item; remembers the
 -- item if the client says it cannot be disenchanted. Returns true in that case.
-function Auctionator.Enchant.LearnFromTooltip(tooltip, itemLink)
+function Auctionary.Enchant.LearnFromTooltip(tooltip, itemLink)
   local itemID = IDFromLink(itemLink)
   local name = tooltip and tooltip:GetName()
   if itemID == nil or name == nil then
@@ -84,17 +84,17 @@ end
 
 -- Asks the client through a hidden tooltip (used before an item is offered
 -- as worth disenchanting)
-function Auctionator.Enchant.CheckNotDisenchantable(itemLink)
-  if Auctionator.Enchant.IsNotDisenchantable(itemLink) then
+function Auctionary.Enchant.CheckNotDisenchantable(itemLink)
+  if Auctionary.Enchant.IsNotDisenchantable(itemLink) then
     return true
   end
-  local tooltip = Auctionator.Compat.GetScanTooltip()
+  local tooltip = Auctionary.Compat.GetScanTooltip()
   tooltip:SetHyperlink(itemLink)
-  return Auctionator.Enchant.LearnFromTooltip(tooltip, itemLink)
+  return Auctionary.Enchant.LearnFromTooltip(tooltip, itemLink)
 end
 
 local function FindEntry(itemLink)
-  if Auctionator.Enchant.IsNotDisenchantable(itemLink) then
+  if Auctionary.Enchant.IsNotDisenchantable(itemLink) then
     return nil
   end
   local _, _, quality, itemLevel, _, itemType, _, _, equipLoc = GetItemInfo(itemLink)
@@ -113,7 +113,7 @@ local function FindEntry(itemLink)
   if equipLoc == "INVTYPE_BODY" or equipLoc == "INVTYPE_TABARD" or equipLoc == "" then
     return nil
   end
-  local entries = Auctionator.Constants.DisenchantingProbability[class][quality] or {}
+  local entries = Auctionary.Constants.DisenchantingProbability[class][quality] or {}
   for _, entry in ipairs(entries) do
     if itemLevel >= entry[1] and itemLevel <= entry[2] then
       return entry
@@ -123,7 +123,7 @@ end
 
 -- Returns the expected value (nil if the item cannot be disenchanted) and
 -- whether a material had no known price
-function Auctionator.Enchant.GetDisenchantAuctionPrice(itemLink)
+function Auctionary.Enchant.GetDisenchantAuctionPrice(itemLink)
   local entry = FindEntry(itemLink)
   if entry == nil then
     return nil
@@ -141,7 +141,7 @@ function Auctionator.Enchant.GetDisenchantAuctionPrice(itemLink)
 end
 
 -- Lines like "75% 1-3 Infinite Dust"
-function Auctionator.Enchant.GetDisenchantBreakdown(itemLink)
+function Auctionary.Enchant.GetDisenchantBreakdown(itemLink)
   local entry = FindEntry(itemLink)
   local results = {}
   if entry == nil then
@@ -161,7 +161,7 @@ function Auctionator.Enchant.GetDisenchantBreakdown(itemLink)
     mat.high = math.max(mat.high, entry[x + 1])
   end
   for _, mat in ipairs(order) do
-    local name = GetItemInfo(mat.id) or Auctionator.Constants.DisenchantingItemName[mat.id] or "?"
+    local name = GetItemInfo(mat.id) or Auctionary.Constants.DisenchantingItemName[mat.id] or "?"
     local amount = mat.low == mat.high and tostring(mat.low) or (mat.low .. "-" .. mat.high)
     local percent = math.floor(mat.percent * 10 + 0.5) / 10
     table.insert(results, "  " .. percent .. "%  " .. amount .. " " .. name)
@@ -189,10 +189,10 @@ local function GetTableValue(dropTable, itemID)
   return math.floor(total / 5), missing
 end
 
-function Auctionator.Mill.GetMillAuctionPrice(itemID)
-  return GetTableValue(Auctionator.Mill.MILL_TABLE, itemID)
+function Auctionary.Mill.GetMillAuctionPrice(itemID)
+  return GetTableValue(Auctionary.Mill.MILL_TABLE, itemID)
 end
 
-function Auctionator.Prospect.GetProspectAuctionPrice(itemID)
-  return GetTableValue(Auctionator.Prospect.PROSPECT_TABLE, itemID)
+function Auctionary.Prospect.GetProspectAuctionPrice(itemID)
+  return GetTableValue(Auctionary.Prospect.PROSPECT_TABLE, itemID)
 end

@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- What a crafted item costs to make ("Mats Cost" in tooltips).
 --
@@ -14,7 +14,7 @@ local Auctionator = Auctionary
 -- }
 local RECIPES_DB_VERSION = 1
 
-function Auctionator.CraftingInfo.InitializeRecipes()
+function Auctionary.CraftingInfo.InitializeRecipes()
   if AUCTIONARY_RECIPES == nil or AUCTIONARY_RECIPES["__dbversion"] ~= RECIPES_DB_VERSION then
     AUCTIONARY_RECIPES = { ["__dbversion"] = RECIPES_DB_VERSION }
   end
@@ -28,7 +28,7 @@ local function IDFromLink(link, linkType)
 end
 
 -- Reads the profession window that is open right now
-function Auctionator.CraftingInfo.ScanTradeSkill()
+function Auctionary.CraftingInfo.ScanTradeSkill()
   if AUCTIONARY_RECIPES == nil then
     return
   end
@@ -73,19 +73,19 @@ function Auctionator.CraftingInfo.ScanTradeSkill()
   end
 
   if learned > 0 then
-    Auctionator.Debug.Message("recipes learned", learned)
+    Auctionary.Debug.Message("recipes learned", learned)
   end
 end
 
 -- Price of one reagent: what a vendor sells it for if a vendor was seen
 -- selling it (vials, thread, ...), else the last auction price. nil if unknown.
-function Auctionator.CraftingInfo.GetReagentPrice(reagentID)
+function Auctionary.CraftingInfo.GetReagentPrice(reagentID)
   local vendorPrice = AUCTIONARY_VENDOR_PRICE_CACHE and AUCTIONARY_VENDOR_PRICE_CACHE[reagentID]
   if vendorPrice ~= nil then
     return vendorPrice
   end
-  if Auctionator.Database ~= nil then
-    return Auctionator.Database:GetPrice(reagentID)
+  if Auctionary.Database ~= nil then
+    return Auctionary.Database:GetPrice(reagentID)
   end
   return nil
 end
@@ -124,7 +124,7 @@ local function GetStaticRecipes(itemID)
   if cached ~= nil then
     return cached or nil
   end
-  local packed = Auctionator.CraftingInfo.StaticRecipes and Auctionator.CraftingInfo.StaticRecipes[itemID]
+  local packed = Auctionary.CraftingInfo.StaticRecipes and Auctionary.CraftingInfo.StaticRecipes[itemID]
   if packed == nil then
     staticCache[itemID] = false
     return nil
@@ -154,9 +154,9 @@ local CARD_RANKS = {
 local SMALL_DECKS = { Rogues = 3, Swords = 4, Mages = 5, Demons = 6 }
 
 -- Called for auctions seen in scans and searches
-function Auctionator.CraftingInfo.NoteItemName(name, itemLink)
+function Auctionary.CraftingInfo.NoteItemName(name, itemLink)
   -- Every name seen is also kept for the search's spelling help
-  Auctionator.Search.NoteItemName(name, itemLink and itemLink:match("|Hitem:(%d+)"))
+  Auctionary.Search.NoteItemName(name, itemLink and itemLink:match("|Hitem:(%d+)"))
   if name == nil or AUCTIONARY_RECIPES == nil then
     return
   end
@@ -188,7 +188,7 @@ local function GetDeckCost(itemID)
 
   local cost, missing = 0, 0
   for rank = 1, SMALL_DECKS[suit] or 8 do
-    local price = cards[rank] and Auctionator.CraftingInfo.GetReagentPrice(cards[rank])
+    local price = cards[rank] and Auctionary.CraftingInfo.GetReagentPrice(cards[rank])
     if price ~= nil then
       cost = cost + price
     else
@@ -203,7 +203,7 @@ local NORTHREND_SUITS = { Nobles = true, Prisms = true, Chaos = true, Undeath = 
 
 -- Returns the cost, the number of reagents without a known price, and
 -- optionally a note to show with it
-function Auctionator.CraftingInfo.GetMatsCost(itemID)
+function Auctionary.CraftingInfo.GetMatsCost(itemID)
   itemID = tostring(itemID)
   -- What was read from a profession window on this server is trusted over
   -- the shipped list
@@ -217,7 +217,7 @@ function Auctionator.CraftingInfo.GetMatsCost(itemID)
     local name = GetItemInfo(itemID)
     local suit = name and name:match("^%a+ of (%a+)$")
     if suit ~= nil and NORTHREND_SUITS[suit] and itemID ~= NORTH_CARD_ID then
-      local cost, missing = Auctionator.CraftingInfo.GetMatsCost(NORTH_CARD_ID)
+      local cost, missing = Auctionary.CraftingInfo.GetMatsCost(NORTH_CARD_ID)
       return cost, missing, "3% chance"
     end
     if AUCTIONARY_RECIPES ~= nil then
@@ -232,7 +232,7 @@ function Auctionator.CraftingInfo.GetMatsCost(itemID)
     for reagentID, count in pairs(recipe.r) do
       local resolvedID = ResolveReagent(reagentID, itemID)
       if resolvedID ~= nil then
-        local price = resolvedID and Auctionator.CraftingInfo.GetReagentPrice(resolvedID)
+        local price = resolvedID and Auctionary.CraftingInfo.GetReagentPrice(resolvedID)
         if price then
           cost = cost + price * count
         else
@@ -280,7 +280,7 @@ local function ScanMerchant()
 end
 
 frame:SetScript("OnEvent", function(_, eventName)
-  if not Auctionator.State.Loaded then
+  if not Auctionary.State.Loaded then
     return
   end
   if eventName == "MERCHANT_SHOW" or eventName == "MERCHANT_UPDATE" then
@@ -288,11 +288,11 @@ frame:SetScript("OnEvent", function(_, eventName)
   elseif not scanPending then
     -- The window sends several updates while it fills; read it once after
     scanPending = true
-    Auctionator.Compat.After(0.5, function()
+    Auctionary.Compat.After(0.5, function()
       scanPending = false
-      local ok, message = pcall(Auctionator.CraftingInfo.ScanTradeSkill)
+      local ok, message = pcall(Auctionary.CraftingInfo.ScanTradeSkill)
       if not ok then
-        Auctionator.Debug.Message("recipe scan failed", message)
+        Auctionary.Debug.Message("recipe scan failed", message)
       end
     end)
   end

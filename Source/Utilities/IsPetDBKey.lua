@@ -1,5 +1,5 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.IsPetDBKey(itemKey)
+function Auctionary.Utilities.IsPetDBKey(itemKey)
   return string.sub(itemKey,1,1) == "p"
 end

@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- array: List of objects
 -- typeStr: Type to ensure every item is
@@ -6,7 +6,7 @@ local Auctionator = Auctionary
 -- Returns a new array with only valid entries
 
 
-function Auctionator.Utilities.VerifyListTypes(list, requiredTypeString)
+function Auctionary.Utilities.VerifyListTypes(list, requiredTypeString)
   if list == nil or type(list) ~= "table" then
     return nil
   end

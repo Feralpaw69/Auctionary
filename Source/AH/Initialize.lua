@@ -1,26 +1,26 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local function CreateInternal(name, mixin)
   local frame = CreateFrame("Frame", name, UIParent)
-  Auctionator.Compat.Mixin(frame, mixin)
+  Auctionary.Compat.Mixin(frame, mixin)
   frame:OnLoad()
   return frame
 end
 
-function Auctionator.AH.Initialize()
-  if Auctionator.AH.Internals ~= nil then
+function Auctionary.AH.Initialize()
+  if Auctionary.AH.Internals ~= nil then
     return
   end
-  Auctionator.AH.Internals = {}
+  Auctionary.AH.Internals = {}
 
-  Auctionator.AH.Internals.throttling = CreateInternal(
+  Auctionary.AH.Internals.throttling = CreateInternal(
     "AuctionaryAHThrottlingFrame", AuctionaryAHThrottlingFrameMixin
   )
-  Auctionator.AH.Queue = Auctionator.Compat.CreateAndInitFromMixin(Auctionator.AH.QueueMixin)
-  Auctionator.AH.Internals.scan = CreateInternal(
+  Auctionary.AH.Queue = Auctionary.Compat.CreateAndInitFromMixin(Auctionary.AH.QueueMixin)
+  Auctionary.AH.Internals.scan = CreateInternal(
     "AuctionaryAHScanFrame", AuctionaryAHScanFrameMixin
   )
-  Auctionator.AH.Internals.owned = CreateInternal(
+  Auctionary.AH.Internals.owned = CreateInternal(
     "AuctionaryAHOwnedFrame", AuctionaryAHOwnedFrameMixin
   )
 end
@@ -30,24 +30,24 @@ local core = CreateFrame("Frame", "AuctionaryAHCoreFrame")
 core:RegisterEvent("AUCTION_HOUSE_SHOW")
 core:RegisterEvent("AUCTION_HOUSE_CLOSED")
 core:SetScript("OnEvent", function(self, eventName)
-  if not Auctionator.State.Loaded then
+  if not Auctionary.State.Loaded then
     return
   end
   if not self.registered then
     self.registered = true
-    Auctionator.EventBus:RegisterSource(self, "AuctionaryAHCoreFrame")
+    Auctionary.EventBus:RegisterSource(self, "AuctionaryAHCoreFrame")
   end
 
   if eventName == "AUCTION_HOUSE_SHOW" then
-    Auctionator.State.AHOpen = true
-    Auctionator.AH.Initialize()
-    Auctionator.FullScan.Initialize()
+    Auctionary.State.AHOpen = true
+    Auctionary.AH.Initialize()
+    Auctionary.FullScan.Initialize()
     -- Loads the list of own auctions; it is needed to tell them apart in scans
     GetOwnerAuctionItems()
-    Auctionator.EventBus:Fire(self, Auctionator.AH.Events.Opened)
-  elseif Auctionator.State.AHOpen then
+    Auctionary.EventBus:Fire(self, Auctionary.AH.Events.Opened)
+  elseif Auctionary.State.AHOpen then
     -- AUCTION_HOUSE_CLOSED is sent twice by the client
-    Auctionator.State.AHOpen = false
-    Auctionator.EventBus:Fire(self, Auctionator.AH.Events.Closed)
+    Auctionary.State.AHOpen = false
+    Auctionary.EventBus:Fire(self, Auctionary.AH.Events.Closed)
   end
 end)

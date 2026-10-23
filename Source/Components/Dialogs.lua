@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Small windows shared by the tabs: price history of an item, a text window
 -- for importing/exporting shopping lists, and the default stack sizes.
@@ -41,25 +41,25 @@ local function CreateDialog(name, width, height, titleText)
   end
   -- Same look as ElvUI's windows when its auction house skin is on
   dialog:SetScript("OnShow", function()
-    if Auctionator.Tabs ~= nil and Auctionator.Tabs.SkinForElvUI ~= nil then
-      pcall(Auctionator.Tabs.SkinForElvUI, dialog, true)
+    if Auctionary.Tabs ~= nil and Auctionary.Tabs.SkinForElvUI ~= nil then
+      pcall(Auctionary.Tabs.SkinForElvUI, dialog, true)
     end
-    if Auctionator.Tabs ~= nil and Auctionator.Tabs.AddEscapeToBoxes ~= nil then
-      pcall(Auctionator.Tabs.AddEscapeToBoxes, dialog)
+    if Auctionary.Tabs ~= nil and Auctionary.Tabs.AddEscapeToBoxes ~= nil then
+      pcall(Auctionary.Tabs.AddEscapeToBoxes, dialog)
     end
   end)
   dialog:Hide()
   return dialog
 end
 
-Auctionator.Components.CreateDialog = CreateDialog
+Auctionary.Components.CreateDialog = CreateDialog
 
 local function HideWithAuctionHouse(dialog)
   local listener = {}
   function listener:ReceiveEvent()
     dialog:Hide()
   end
-  Auctionator.EventBus:Register(listener, { Auctionator.AH.Events.Closed })
+  Auctionary.EventBus:Register(listener, { Auctionary.AH.Events.Closed })
 end
 
 ---- Price history / own posting history
@@ -87,31 +87,31 @@ local historyDialog
 
 local function CreateHistoryDialog()
   local dialog = CreateDialog("AuctionaryHistoryDialog", 560, 360, "")
-  local number = Auctionator.Utilities.NumberComparator
+  local number = Auctionary.Utilities.NumberComparator
 
-  dialog.priceProvider = Auctionator.Components.CreateDataProvider({
+  dialog.priceProvider = Auctionary.Components.CreateDataProvider({
     layout = PRICE_LAYOUT,
     comparators = { rawDay = number, minSeen = number, maxSeen = number, available = number },
   })
-  dialog.postingProvider = Auctionator.Components.CreateDataProvider({
+  dialog.postingProvider = Auctionary.Components.CreateDataProvider({
     layout = POSTING_LAYOUT,
     comparators = { rawDay = number, price = number, quantity = number },
   })
-  dialog.priceListing = Auctionator.Components.CreateResultsListing(dialog, dialog.priceProvider, {
+  dialog.priceListing = Auctionary.Components.CreateResultsListing(dialog, dialog.priceProvider, {
     emptyText = "No scan has seen this item yet.",
   })
-  dialog.postingListing = Auctionator.Components.CreateResultsListing(dialog, dialog.postingProvider, {
+  dialog.postingListing = Auctionary.Components.CreateResultsListing(dialog, dialog.postingProvider, {
     emptyText = "You have not posted this item with this addon yet.",
   })
-  dialog.allProvider = Auctionator.Components.CreateDataProvider({
+  dialog.allProvider = Auctionary.Components.CreateDataProvider({
     layout = ALL_POSTINGS_LAYOUT,
     comparators = { rawDay = number, price = number, quantity = number },
   })
-  dialog.allListing = Auctionator.Components.CreateResultsListing(dialog, dialog.allProvider, {
+  dialog.allListing = Auctionary.Components.CreateResultsListing(dialog, dialog.allProvider, {
     emptyText = "You have not posted anything with this addon yet.",
     onRowClick = function(rowData)
       if rowData.itemLink ~= nil then
-        Auctionator.Components.ShowHistory(rowData.itemLink, "posting")
+        Auctionary.Components.ShowHistory(rowData.itemLink, "posting")
       end
     end,
   })
@@ -173,8 +173,8 @@ local function CreateHistoryDialog()
 end
 
 -- view: "price" (default) or "posting"
-function Auctionator.Components.ShowHistory(itemLink, view)
-  if itemLink == nil or Auctionator.Database == nil then
+function Auctionary.Components.ShowHistory(itemLink, view)
+  if itemLink == nil or Auctionary.Database == nil then
     return
   end
   if historyDialog == nil then
@@ -182,22 +182,22 @@ function Auctionator.Components.ShowHistory(itemLink, view)
   end
   local dialog = historyDialog
 
-  Auctionator.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
+  Auctionary.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
     local dbKey = dbKeys[1]
     if dbKey == nil then
       return
     end
     dialog.title:SetText(itemLink)
 
-    local prices = Auctionator.Database:GetPriceHistory(dbKey)
+    local prices = Auctionary.Database:GetPriceHistory(dbKey)
     for _, entry in ipairs(prices) do
       entry.available = entry.available or ""
     end
     dialog.priceProvider:SetEntries(prices)
 
     local postings = {}
-    if Auctionator.PostingHistory ~= nil and Auctionator.PostingHistory.GetPriceHistory ~= nil then
-      local all = Auctionator.PostingHistory:GetPriceHistory(dbKey)
+    if Auctionary.PostingHistory ~= nil and Auctionary.PostingHistory.GetPriceHistory ~= nil then
+      local all = Auctionary.PostingHistory:GetPriceHistory(dbKey)
       -- newest first
       for index = #all, 1, -1 do
         table.insert(postings, all[index])
@@ -205,11 +205,11 @@ function Auctionator.Components.ShowHistory(itemLink, view)
     end
     dialog.postingProvider:SetEntries(postings)
 
-    local average = Auctionator.Database:GetScanAverage(
-      dbKey, Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
+    local average = Auctionary.Database:GetScanAverage(
+      dbKey, Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
     )
     if average ~= nil then
-      dialog.summary:SetText("Average: " .. Auctionator.Compat.GetMoneyString(average, true))
+      dialog.summary:SetText("Average: " .. Auctionary.Compat.GetMoneyString(average, true))
     else
       dialog.summary:SetText("")
     end
@@ -221,13 +221,13 @@ end
 
 -- Everything the player has posted with the addon, newest first. A click on
 -- a row opens the history of that item.
-function Auctionator.Components.ShowAllPostings()
+function Auctionary.Components.ShowAllPostings()
   if historyDialog == nil then
     historyDialog = CreateHistoryDialog()
   end
   local dialog = historyDialog
   local entries = {}
-  local db = Auctionator.PostingHistory and Auctionator.PostingHistory.db
+  local db = Auctionary.PostingHistory and Auctionary.PostingHistory.db
   for dbKey, postings in pairs(db or {}) do
     local itemID = tostring(dbKey):match("^(%d+)")
     local name, itemLink, quality, iconTexture
@@ -241,7 +241,7 @@ function Auctionator.Components.ShowAllPostings()
         quality = quality,
         itemLink = itemLink,
         iconTexture = iconTexture,
-        date = Auctionator.Utilities.PrettyDate(posting.time),
+        date = Auctionary.Utilities.PrettyDate(posting.time),
         rawDay = posting.time,
         price = posting.price,
         quantity = posting.quantity,
@@ -258,7 +258,7 @@ function Auctionator.Components.ShowAllPostings()
   -- Filled after the list is visible: coin icons in text set on a hidden
   -- list do not get drawn by this client
   dialog.allProvider:SetEntries(entries)
-  Auctionator.Compat.After(0.05, function()
+  Auctionary.Compat.After(0.05, function()
     if dialog.allListing:IsVisible() then
       dialog.allListing:Refresh()
     end
@@ -327,7 +327,7 @@ end
 
 -- details = { title, hint, text, acceptText, onAccept(text) }; without
 -- onAccept the window only shows text to copy
-function Auctionator.Components.ShowTextDialog(details, hint, text, acceptText, onAccept)
+function Auctionary.Components.ShowTextDialog(details, hint, text, acceptText, onAccept)
   if type(details) ~= "table" then
     details = { title = details, hint = hint, text = text, acceptText = acceptText, onAccept = onAccept }
   end
@@ -357,11 +357,11 @@ end
 local quantitiesDialog
 
 local function CreateQuantitiesDialog()
-  local Options = Auctionator.Config.Options
+  local Options = Auctionary.Config.Options
   local classNames = { GetAuctionItemClasses() }
   local classIDs = {}
-  for _, classID in pairs(Auctionator.Constants.ItemClass) do
-    if Auctionator.Config.Defaults[Options.DEFAULT_QUANTITIES][classID] ~= nil then
+  for _, classID in pairs(Auctionary.Constants.ItemClass) do
+    if Auctionary.Config.Defaults[Options.DEFAULT_QUANTITIES][classID] ~= nil then
       table.insert(classIDs, classID)
     end
   end
@@ -389,9 +389,9 @@ local function CreateQuantitiesDialog()
     box:SetMaxLetters(4)
     box:SetScript("OnTextChanged", function(_, userInput)
       if userInput then
-        local quantities = Auctionator.Config.Get(Options.DEFAULT_QUANTITIES)
+        local quantities = Auctionary.Config.Get(Options.DEFAULT_QUANTITIES)
         quantities[classID] = tonumber(box:GetText()) or 0
-        Auctionator.Config.Set(Options.DEFAULT_QUANTITIES, quantities)
+        Auctionary.Config.Set(Options.DEFAULT_QUANTITIES, quantities)
       end
     end)
     box:SetScript("OnEnterPressed", function() box:ClearFocus() end)
@@ -400,7 +400,7 @@ local function CreateQuantitiesDialog()
   end
 
   dialog:HookScript("OnShow", function()
-    local quantities = Auctionator.Config.Get(Options.DEFAULT_QUANTITIES)
+    local quantities = Auctionary.Config.Get(Options.DEFAULT_QUANTITIES)
     for classID, box in pairs(dialog.boxes) do
       box:SetText(tostring(quantities[classID] or 0))
     end
@@ -409,14 +409,14 @@ local function CreateQuantitiesDialog()
   return dialog
 end
 
-function Auctionator.Components.ShowQuantitiesDialog()
+function Auctionary.Components.ShowQuantitiesDialog()
   if quantitiesDialog == nil then
     quantitiesDialog = CreateQuantitiesDialog()
   end
   quantitiesDialog:Show()
 end
 
-Auctionator.Components.ShowDefaultQuantities = Auctionator.Components.ShowQuantitiesDialog
+Auctionary.Components.ShowDefaultQuantities = Auctionary.Components.ShowQuantitiesDialog
 
 
 ---- Sales: what sold and what expired, read from the auction house mail
@@ -438,11 +438,11 @@ local SOLD_PATTERN = SubjectPattern(AUCTION_SOLD_MAIL_SUBJECT)
 local EXPIRED_PATTERN = SubjectPattern(AUCTION_EXPIRED_MAIL_SUBJECT)
 
 local function SalesList()
-  if Auctionator.SavedState == nil then
+  if Auctionary.SavedState == nil then
     return nil
   end
-  Auctionator.SavedState.Sales = Auctionator.SavedState.Sales or {}
-  return Auctionator.SavedState.Sales
+  Auctionary.SavedState.Sales = Auctionary.SavedState.Sales or {}
+  return Auctionary.SavedState.Sales
 end
 
 -- Mails carry no id, so a mail counts as already recorded when a record of
@@ -523,16 +523,16 @@ local SALES_LAYOUT = {
 }
 local salesDialog
 
-function Auctionator.Components.ShowSales()
+function Auctionary.Components.ShowSales()
   if salesDialog == nil then
-    local number = Auctionator.Utilities.NumberComparator
-    local text = Auctionator.Utilities.StringComparator
+    local number = Auctionary.Utilities.NumberComparator
+    local text = Auctionary.Utilities.StringComparator
     salesDialog = CreateDialog("AuctionarySalesDialog", 700, 440, "Sales Summary")
-    salesDialog.provider = Auctionator.Components.CreateDataProvider({
+    salesDialog.provider = Auctionary.Components.CreateDataProvider({
       layout = SALES_LAYOUT,
       comparators = { name = text, result = text, gold = number, buyer = text, character = text, rawTime = number },
     })
-    salesDialog.listing = Auctionator.Components.CreateResultsListing(salesDialog, salesDialog.provider, {
+    salesDialog.listing = Auctionary.Components.CreateResultsListing(salesDialog, salesDialog.provider, {
       emptyText = "Nothing recorded yet. Open your mailbox: auction house mail is counted from then on.",
     })
     salesDialog.listing:SetPoint("TOPLEFT", salesDialog, "TOPLEFT", 14, -96)
@@ -578,7 +578,7 @@ function Auctionator.Components.ShowSales()
         result = record.k,
         resultText = record.k == "s" and "|cff20ff20Sold|r" or "|cffff6060Expired|r",
         gold = record.g or 0,
-        goldText = record.k == "s" and Auctionator.Compat.GetMoneyString(record.g or 0, true) or "",
+        goldText = record.k == "s" and Auctionary.Compat.GetMoneyString(record.g or 0, true) or "",
         buyer = record.b or "",
         character = record.c or "",
         rawTime = record.t,
@@ -592,13 +592,13 @@ function Auctionator.Components.ShowSales()
   local lines = {}
   for _, period in ipairs(periods) do
     table.insert(lines, ("|cffffd100%s:|r  %d sold for %s,  %d expired"):format(
-      period.label, period.sold, Auctionator.Compat.GetMoneyString(period.gold, true), period.expired))
+      period.label, period.sold, Auctionary.Compat.GetMoneyString(period.gold, true), period.expired))
   end
   dialog.totals:SetText(table.concat(lines, "\n"))
   dialog.summary:SetText("Gold is what arrived by mail (after the fee). Only mail seen in an open mailbox is counted.")
   dialog:Show()
   dialog.provider:SetEntries(entries)
-  Auctionator.Compat.After(0.05, function()
+  Auctionary.Compat.After(0.05, function()
     if dialog.listing:IsVisible() then
       dialog.listing:Refresh()
     end
@@ -608,26 +608,26 @@ end
 ---- Gold Tracker: what was earned (sales), spent (purchases) and paid as
 -- deposits, as a list and as a chart over a chosen period
 
-Auctionator.GoldLog = {}
+Auctionary.GoldLog = {}
 local GOLD_LOG_DAYS = 400
 
 local function GoldLogList()
-  if Auctionator.SavedState == nil then
+  if Auctionary.SavedState == nil then
     return nil
   end
-  Auctionator.SavedState.GoldLog = Auctionator.SavedState.GoldLog or {}
-  return Auctionator.SavedState.GoldLog
+  Auctionary.SavedState.GoldLog = Auctionary.SavedState.GoldLog or {}
+  return Auctionary.SavedState.GoldLog
 end
 
 -- kind: "b" bought, "d" deposit; gold in copper (what left your bags)
-function Auctionator.GoldLog.Add(kind, name, itemLink, quantity, gold, source, extra)
+function Auctionary.GoldLog.Add(kind, name, itemLink, quantity, gold, source, extra)
   local log = GoldLogList()
   if log == nil or (gold or 0) <= 0 then
     return
   end
-  local Options = Auctionator.Config.Options
-  if not Auctionator.Config.Get(Options.GOLD_TRACKER_RECORD)
-     or (kind == "v" and not Auctionator.Config.Get(Options.GOLD_TRACKER_VENDOR)) then
+  local Options = Auctionary.Config.Options
+  if not Auctionary.Config.Get(Options.GOLD_TRACKER_RECORD)
+     or (kind == "v" and not Auctionary.Config.Get(Options.GOLD_TRACKER_VENDOR)) then
     return
   end
   if name == nil and itemLink ~= nil then
@@ -650,8 +650,8 @@ local goldDialog
 -- Deletes everything the Gold Tracker recorded (sales, purchases, deposits,
 -- vendor sales, gold history) and starts again from the gold this
 -- character has right now. Other characters start when they log in.
-function Auctionator.GoldLog.Reset()
-  local state = Auctionator.SavedState
+function Auctionary.GoldLog.Reset()
+  local state = Auctionary.SavedState
   if state == nil then
     return
   end
@@ -666,7 +666,7 @@ function Auctionator.GoldLog.Reset()
   end
   goldModel = nil
   if goldDialog ~= nil and goldDialog:IsShown() then
-    Auctionator.Components.ShowGoldTracker()
+    Auctionary.Components.ShowGoldTracker()
   end
 end
 
@@ -677,12 +677,12 @@ local MONEY_POINT_SECONDS = 600
 -- taken a few seconds later, then on every change and once a minute.
 local moneyFrame = CreateFrame("Frame")
 local function RecordMoney()
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   local realm, character = GetRealmName(), UnitName("player")
   if state == nil or realm == nil or character == nil then
     return
   end
-  if not Auctionator.Config.Get(Auctionator.Config.Options.GOLD_TRACKER_RECORD) then
+  if not Auctionary.Config.Get(Auctionary.Config.Options.GOLD_TRACKER_RECORD) then
     return
   end
   -- Records of 0 gold from the version that read it too early
@@ -724,30 +724,31 @@ local function RecordMoney()
   end
 end
 
-local sinceLogin, sinceRecord, ready = 0, 0, false
+-- Gold only changes with PLAYER_MONEY, so that event (and logging out) is
+-- enough. Right after login GetMoney() still says 0: the first record waits
+-- until real gold arrived, then the frame stops checking every frame.
+local sinceLogin, ready = 0, false
+local function WaitForMoney(_, elapsed)
+  sinceLogin = sinceLogin + (elapsed or 0)
+  -- Real gold arrived, or (for a character with no gold) enough time passed
+  if (sinceLogin > 3 and GetMoney() > 0) or sinceLogin > 20 then
+    ready = true
+    moneyFrame:SetScript("OnUpdate", nil)
+    pcall(RecordMoney)
+  end
+end
 moneyFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 moneyFrame:RegisterEvent("PLAYER_MONEY")
+moneyFrame:RegisterEvent("PLAYER_LOGOUT")
 moneyFrame:SetScript("OnEvent", function(_, eventName)
   if eventName == "PLAYER_ENTERING_WORLD" then
     sinceLogin, ready = 0, false
+    moneyFrame:SetScript("OnUpdate", WaitForMoney)
   elseif ready then
     pcall(RecordMoney)
   end
 end)
-moneyFrame:SetScript("OnUpdate", function(_, elapsed)
-  sinceLogin = sinceLogin + (elapsed or 0)
-  sinceRecord = sinceRecord + (elapsed or 0)
-  if not ready then
-    -- Real gold arrived, or (for a character with no gold) enough time passed
-    if (sinceLogin > 3 and GetMoney() > 0) or sinceLogin > 20 then
-      ready, sinceRecord = true, 0
-      pcall(RecordMoney)
-    end
-  elseif sinceRecord >= 60 then
-    sinceRecord = 0
-    pcall(RecordMoney)
-  end
-end)
+moneyFrame:SetScript("OnUpdate", WaitForMoney)
 
 -- Gold of all characters at a moment; exact is false when a character's
 -- records only start later
@@ -758,7 +759,7 @@ local trackedCharacter
 -- gaps, so the line also moves for times before the first snapshot.
 
 local function BuildGoldModel()
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   local realm = GetRealmName()
   local model = {}
   local function Character(name)
@@ -868,7 +869,7 @@ if hooksecurefunc ~= nil then
       end
       local name, _, _, _, _, _, _, _, _, _, vendorPrice = GetItemInfo(link)
       if (vendorPrice or 0) > 0 then
-        Auctionator.GoldLog.Add("v", name, link, count or 1, vendorPrice * (count or 1), "Vendor")
+        Auctionary.GoldLog.Add("v", name, link, count or 1, vendorPrice * (count or 1), "Vendor")
       end
     end)
   end)
@@ -891,7 +892,7 @@ local INCOME = { s = true, v = true }
 local CHART_WIDTH, CHART_HEIGHT = 640, 130
 
 local function Money(amount)
-  return Auctionator.Compat.GetMoneyString(math.floor(amount), true)
+  return Auctionary.Compat.GetMoneyString(math.floor(amount), true)
 end
 local function Signed(amount)
   if amount < 0 then
@@ -932,7 +933,7 @@ local function MakeRange(kind, value)
   elseif kind == "all" then
     -- From the first record on (at least the last 7 days)
     local first = today - 6 * 86400
-    local state = Auctionator.SavedState
+    local state = Auctionary.SavedState
     for _, list in ipairs({ state and state.Sales or {}, state and state.GoldLog or {} }) do
       for _, record in ipairs(list) do
         if record.t ~= nil and record.t < first then
@@ -964,7 +965,7 @@ local function SnipingSummary(realm)
       table.insert(events, record)
     end
   end
-  for _, record in ipairs((Auctionator.SavedState and Auctionator.SavedState.Sales) or {}) do
+  for _, record in ipairs((Auctionary.SavedState and Auctionary.SavedState.Sales) or {}) do
     if record.r == realm and record.k == "s" then
       table.insert(events, record)
     end
@@ -1023,8 +1024,8 @@ end
 
 local function CreateGoldDialog()
   local dialog = CreateDialog("AuctionaryGoldDialog", 760, 590, "Gold Tracker")
-  local number = Auctionator.Utilities.NumberComparator
-  local text = Auctionator.Utilities.StringComparator
+  local number = Auctionary.Utilities.NumberComparator
+  local text = Auctionary.Utilities.StringComparator
   dialog.range = MakeRange("7d")
   dialog.history = {}
 
@@ -1042,7 +1043,7 @@ local function CreateGoldDialog()
       info.func = function()
         dialog.history = {}
         dialog.range = MakeRange(kind, value)
-        Auctionator.Components.ShowGoldTracker()
+        Auctionary.Components.ShowGoldTracker()
       end
       UIDropDownMenu_AddButton(info, level)
     end
@@ -1107,13 +1108,13 @@ local function CreateGoldDialog()
       info.notCheckable = true
       info.func = function()
         trackedCharacter = character
-        Auctionator.Components.ShowGoldTracker()
+        Auctionary.Components.ShowGoldTracker()
       end
       UIDropDownMenu_AddButton(info)
     end
     Add("All characters", nil)
     local names, seen = {}, {}
-    local state = Auctionator.SavedState
+    local state = Auctionary.SavedState
     local realm = GetRealmName()
     for _, source in ipairs({ state and state.Money and state.Money[realm] or {}, state and state.MoneyHistory and state.MoneyHistory[realm] or {} }) do
       for name in pairs(source) do
@@ -1135,7 +1136,7 @@ local function CreateGoldDialog()
     local previous = table.remove(dialog.history)
     if previous ~= nil then
       dialog.range = previous
-      Auctionator.Components.ShowGoldTracker()
+      Auctionary.Components.ShowGoldTracker()
     end
   end)
 
@@ -1181,11 +1182,11 @@ local function CreateGoldDialog()
   dialog.chartScale = dialog:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   dialog.chartScale:SetPoint("BOTTOMLEFT", chart, "TOPLEFT", 0, 2)
 
-  dialog.provider = Auctionator.Components.CreateDataProvider({
+  dialog.provider = Auctionary.Components.CreateDataProvider({
     layout = GOLD_LAYOUT,
     comparators = { name = text, kind = text, quantity = number, gold = number, source = text, character = text, rawTime = number },
   })
-  dialog.listing = Auctionator.Components.CreateResultsListing(dialog, dialog.provider, {
+  dialog.listing = Auctionary.Components.CreateResultsListing(dialog, dialog.provider, {
     emptyText = "Nothing recorded in this period.",
   })
   dialog.listing:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -300)
@@ -1245,7 +1246,7 @@ local function GetSlot(chart, index)
           or (date("%a %d %b, %H:%M", slot.from) .. " - " .. date("%H:%M", slot.to)),
       }
     end
-    Auctionator.Components.ShowGoldTracker()
+    Auctionary.Components.ShowGoldTracker()
   end)
   chart.slots[index] = slot
   return slot
@@ -1391,7 +1392,7 @@ local function DrawGoldLine(chart, from, to, bars, now)
   Dot(points[#points].x, Y(points[#points].value), 7)
 end
 
-function Auctionator.Components.ShowGoldTracker()
+function Auctionary.Components.ShowGoldTracker()
   if goldDialog == nil then
     goldDialog = CreateGoldDialog()
   end
@@ -1445,7 +1446,7 @@ function Auctionator.Components.ShowGoldTracker()
       date = date("%b %d, %H:%M", record.t),
     })
   end
-  for _, record in ipairs((Auctionator.SavedState and Auctionator.SavedState.Sales) or {}) do
+  for _, record in ipairs((Auctionary.SavedState and Auctionary.SavedState.Sales) or {}) do
     Use(record)
   end
   for _, record in ipairs(GoldLogList() or {}) do
@@ -1474,11 +1475,11 @@ function Auctionator.Components.ShowGoldTracker()
       expired > 0 and ("     |cff909090" .. expired .. " expired|r") or ""))
   end
   -- Sniping (only where the tab exists), over everything recorded
-  if AuctionarySnipingTabFrameMixin ~= nil and Auctionator.Config.Get(Auctionator.Config.Options.GOLD_TRACKER_SNIPING) then
+  if AuctionarySnipingTabFrameMixin ~= nil and Auctionary.Config.Get(Auctionary.Config.Options.GOLD_TRACKER_SNIPING) then
     local ok, snipe = pcall(SnipingSummary, realm)
     if ok and snipe.bought > 0 then
       local vendorMade = snipe.vendorIncome - snipe.vendorCost
-      local auctionMade = snipe.auctionIncome * Auctionator.Constants.AfterAHCut - snipe.auctionCost
+      local auctionMade = snipe.auctionIncome * Auctionary.Constants.AfterAHCut - snipe.auctionCost
       table.insert(lines, ("|cffffd100Sniping (all recorded):|r %d bought for %s     |cffffd100Vendored:|r %s     |cffffd100Resold:|r %s     |cffffd100Total:|r %s     |cff909090still held: %s|r"):format(
         snipe.bought, Money(snipe.cost), Signed(vendorMade), Signed(auctionMade), Signed(vendorMade + auctionMade), Money(snipe.heldCost)))
     end
@@ -1541,7 +1542,7 @@ function Auctionator.Components.ShowGoldTracker()
   table.sort(entries, function(a, b) return a.rawTime > b.rawTime end)
   dialog:Show()
   dialog.provider:SetEntries(entries)
-  Auctionator.Compat.After(0.05, function()
+  Auctionary.Compat.After(0.05, function()
     if dialog.listing:IsVisible() then
       dialog.listing:Refresh()
     end

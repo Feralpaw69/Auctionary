@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 AuctionarySearchProviderMixin = {}
 
@@ -31,19 +31,19 @@ function AuctionarySearchProviderMixin:GetCurrentEmptyResult()
 end
 
 function AuctionarySearchProviderMixin:RegisterEvents(events)
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:RegisterEvents()", events)
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:RegisterEvents()", events)
 
-  Auctionator.Compat.RegisterFrameForEvents(self, events)
+  Auctionary.Compat.RegisterFrameForEvents(self, events)
 end
 
 function AuctionarySearchProviderMixin:UnregisterEvents(events)
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:UnregisterEvents()", events)
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:UnregisterEvents()", events)
 
-  Auctionator.Compat.UnregisterFrameForEvents(self, events)
+  Auctionary.Compat.UnregisterFrameForEvents(self, events)
 end
 
 function AuctionarySearchProviderMixin:SetTerms(terms, config)
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:SetTerms()", terms, config)
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:SetTerms()", terms, config)
 
   self.terms = terms
   self.config = config or {}
@@ -59,7 +59,7 @@ function AuctionarySearchProviderMixin:GetSearchTermCount()
 end
 
 function AuctionarySearchProviderMixin:HasMoreTerms()
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:HasMoreTerms()")
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:HasMoreTerms()")
 
   return
     self.terms ~= nil and
@@ -69,7 +69,7 @@ function AuctionarySearchProviderMixin:HasMoreTerms()
 end
 
 function AuctionarySearchProviderMixin:GetNextSearchParameter()
-  Auctionator.Debug.Message("AuctionarySearchProviderMixin:GetNextSearchParameter()")
+  Auctionary.Debug.Message("AuctionarySearchProviderMixin:GetNextSearchParameter()")
 
   if self:HasMoreTerms() then
     self.index = self.index + 1

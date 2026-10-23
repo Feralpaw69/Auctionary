@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Search.Events = {
+Auctionary.Search.Events = {
   SearchResultsReady = "SEARCH_RESULTS_READY",
   BlizzardInfo = "BLIZZARD_INFO"
 }

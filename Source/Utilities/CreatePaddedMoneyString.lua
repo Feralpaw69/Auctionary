@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 local function getCopper(amount)
   return amount % 100
@@ -18,7 +18,7 @@ local copperIcon = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:0:0|t"
 local leftPadding = " "
 local rightPadding = " "
 
-function Auctionator.Utilities.CreatePaddedMoneyString(amount)
+function Auctionary.Utilities.CreatePaddedMoneyString(amount)
   amount = math.floor(amount)
 
   local gold, silver, copper = getGold(amount), getSilver(amount), getCopper(amount)

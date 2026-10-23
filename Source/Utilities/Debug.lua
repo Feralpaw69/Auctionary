@@ -1,16 +1,16 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Debug.IsOn()
-  return Auctionator.Config.Get(Auctionator.Config.Options.DEBUG)
+function Auctionary.Debug.IsOn()
+  return Auctionary.Config.Get(Auctionary.Config.Options.DEBUG)
 end
 
-function Auctionator.Debug.Toggle()
-  Auctionator.Config.Set(Auctionator.Config.Options.DEBUG,
-    not Auctionator.Config.Get(Auctionator.Config.Options.DEBUG))
+function Auctionary.Debug.Toggle()
+  Auctionary.Config.Set(Auctionary.Config.Options.DEBUG,
+    not Auctionary.Config.Get(Auctionary.Config.Options.DEBUG))
 end
 
-function Auctionator.Debug.Message(message, ...)
-  if Auctionator.Debug.IsOn() then
-    print(Auctionator.Compat.Colors.GREEN_FONT_COLOR:WrapTextInColorCode(message), ...)
+function Auctionary.Debug.Message(message, ...)
+  if Auctionary.Debug.IsOn() then
+    print(Auctionary.Compat.Colors.GREEN_FONT_COLOR:WrapTextInColorCode(message), ...)
   end
 end

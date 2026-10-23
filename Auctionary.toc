@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Title: Auctionary
-## Version: 1.48
-## Author: Banksty. Based on Auctionator by Borjamacare and plusmouse (MIT licence)
+## Version: 1.51
+## Author: Banksty
 ## Notes: Auction house addon for 3.3.5a: shopping lists, selling, cancelling, price history and tooltips. /aury
 ## SavedVariables: AUCTIONARY_CONFIG, AUCTIONARY_SAVEDVARS, AUCTIONARY_SHOPPING_LISTS, AUCTIONARY_PRICE_DATABASE, AUCTIONARY_POSTING_HISTORY, AUCTIONARY_VENDOR_PRICE_CACHE, AUCTIONARY_RECENT_SEARCHES, AUCTIONARY_SELLING_GROUPS, AUCTIONARY_RECIPES
 ## SavedVariablesPerCharacter: AUCTIONARY_CHARACTER_CONFIG
@@ -109,9 +109,7 @@ Source\Tabs\ShoppingItemDialog.lua
 Source\Tabs\Shopping.lua
 Source\Tabs\Selling.lua
 Source\Tabs\Cancelling.lua
-Source\Tabs\Auctionator.lua
+Source\Tabs\Settings.lua
 Source\SlashCmd\Commands.lua
-Source\SlashCmd\TestAH.lua
-Source\SlashCmd\Test.lua
 Source\SlashCmd\Main.lua
 Source\Initialize\Main.lua

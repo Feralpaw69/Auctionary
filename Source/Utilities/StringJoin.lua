@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.StringJoin(array, delimiter)
+function Auctionary.Utilities.StringJoin(array, delimiter)
   local result = ""
 
   for index, item in ipairs(array) do

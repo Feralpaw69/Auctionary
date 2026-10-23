@@ -1,7 +1,7 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Groups.Utilities = {}
-function Auctionator.Groups.Utilities.IsContainedPredicate(list, pred)
+Auctionary.Groups.Utilities = {}
+function Auctionary.Groups.Utilities.IsContainedPredicate(list, pred)
   for _, item in ipairs(list) do
     if (pred(item)) then
       return true
@@ -10,7 +10,7 @@ function Auctionator.Groups.Utilities.IsContainedPredicate(list, pred)
   return false
 end
 
-function Auctionator.Groups.Utilities.ToPostingItem(info)
+function Auctionary.Groups.Utilities.ToPostingItem(info)
   return {
     itemLink = info.itemLink,
     itemID = info.itemID,
@@ -29,6 +29,6 @@ function Auctionator.Groups.Utilities.ToPostingItem(info)
   }
 end
 
-function Auctionator.Groups.Utilities.QueryItem(sortKey)
-  return AuctionatorBagCacheFrame:GetByKey(sortKey)
+function Auctionary.Groups.Utilities.QueryItem(sortKey)
+  return AuctionaryBagCacheFrame:GetByKey(sortKey)
 end

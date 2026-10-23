@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Item categories of the 3.3.5 auction house as used by extended searches.
 -- A category key is "Class", "Class/Subclass" or "Class/Subclass/Slot" using
@@ -54,7 +54,7 @@ local function Build()
   end
 end
 
-function Auctionator.Search.GetLegacyCategoryTree()
+function Auctionary.Search.GetLegacyCategoryTree()
   if tree == nil then
     Build()
   end
@@ -62,7 +62,7 @@ function Auctionator.Search.GetLegacyCategoryTree()
 end
 
 -- nil for an empty or unknown key
-function Auctionator.Search.GetLegacyCategory(categoryKey)
+function Auctionary.Search.GetLegacyCategory(categoryKey)
   if categoryKey == nil or categoryKey == "" then
     return nil
   end

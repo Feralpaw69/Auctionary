@@ -1,12 +1,12 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- The Selling tab: the sellable items of the bags on the left; on the right
 -- the chosen item with stack size, number of stacks, price and duration, and
 -- below that the auctions of the same item that are up right now.
 AuctionarySellingTabFrameMixin = {}
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
-local Options = Auctionator.Config.Options
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
+local Options = Auctionary.Config.Options
 
 local BAG_COLUMNS = 5
 local BAG_BUTTON_SIZE = 37
@@ -56,11 +56,11 @@ local PRICES_TABLE_LAYOUT = {
 }
 
 local function Money(amount)
-  return Auctionator.Compat.GetMoneyString(amount, true)
+  return Auctionary.Compat.GetMoneyString(amount, true)
 end
 
 function AuctionarySellingTabFrameMixin:OnLoad()
-  Auctionator.EventBus:RegisterSource(self, "AuctionarySellingTabFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionarySellingTabFrameMixin")
 
   self.bagItems = {}
   self.bagButtons = {}
@@ -69,9 +69,9 @@ function AuctionarySellingTabFrameMixin:OnLoad()
   self:CreateSaleControls()
   self:CreatePrices()
 
-  Auctionator.EventBus:Register(self, {
-    Auctionator.AH.Events.ScanResultsUpdate,
-    Auctionator.AH.Events.ScanAborted,
+  Auctionary.EventBus:Register(self, {
+    Auctionary.AH.Events.ScanResultsUpdate,
+    Auctionary.AH.Events.ScanAborted,
   })
 
   -- Catches an item that is dragged from the bags into the window. It is
@@ -108,7 +108,7 @@ function AuctionarySellingTabFrameMixin:OnLoad()
   self.UnitPrice.previousFocus = self.NumStacks
   self.UnitPrice.nextFocus = self.StackSize
 
-  self.keys = Auctionator.Keys.Create({
+  self.keys = Auctionary.Keys.Create({
     TAB = function() FocusField(1) end,
     ["SHIFT-TAB"] = function() FocusField(5) end,
     LEFT = function() self:StepItem(-1) end,
@@ -119,7 +119,7 @@ function AuctionarySellingTabFrameMixin:OnLoad()
     if key == "TAB" or key == "SHIFT-TAB" then
       return self:IsVisible() and self.selected ~= nil and not self.posting
     end
-    return self:IsVisible() and not self.posting and Auctionator.Config.Get(Options.KEYS_SELLING)
+    return self:IsVisible() and not self.posting and Auctionary.Config.Get(Options.KEYS_SELLING)
   end)
   self:SetScript("OnShow", function()
     self:RegisterEvent("BAG_UPDATE")
@@ -281,12 +281,12 @@ local function FavouriteKey(item)
 end
 
 function AuctionarySellingTabFrameMixin:IsFavourite(item)
-  local favourites = Auctionator.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
+  local favourites = Auctionary.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
   return favourites[FavouriteKey(item)] ~= nil
 end
 
 function AuctionarySellingTabFrameMixin:ToggleFavourite(item)
-  local favourites = Auctionator.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
+  local favourites = Auctionary.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
   local key = FavouriteKey(item)
   if favourites[key] ~= nil then
     favourites[key] = nil
@@ -294,7 +294,7 @@ function AuctionarySellingTabFrameMixin:ToggleFavourite(item)
     -- The link is kept so the item can be shown while it is not in the bags
     favourites[key] = item.itemLink
   end
-  Auctionator.Config.Set(Options.SELLING_FAVOURITE_KEYS, favourites)
+  Auctionary.Config.Set(Options.SELLING_FAVOURITE_KEYS, favourites)
   GameTooltip:Hide()
   self:RefreshBags()
 end
@@ -312,9 +312,9 @@ function AuctionarySellingTabFrameMixin:ScanBags()
         local key = GroupKey(itemLink)
         local item = byKey[key]
         if item == nil then
-          tooltip = Auctionator.Compat.GetScanTooltip()
+          tooltip = Auctionary.Compat.GetScanTooltip()
           tooltip:SetBagItem(bag, slot)
-          if not Auctionator.Compat.ScanTooltipHasLine(tooltip, UNSELLABLE_TEXTS) then
+          if not Auctionary.Compat.ScanTooltipHasLine(tooltip, UNSELLABLE_TEXTS) then
             local name, _, quality, _, _, _, _, maxStack = GetItemInfo(itemLink)
             if name ~= nil then
               item = {
@@ -324,7 +324,7 @@ function AuctionarySellingTabFrameMixin:ScanBags()
                 quality = quality,
                 iconTexture = texture,
                 maxStack = maxStack or 1,
-                classID = Auctionator.Compat.GetItemClassID(itemLink) or 99,
+                classID = Auctionary.Compat.GetItemClassID(itemLink) or 99,
                 total = 0,
                 locations = {},
               }
@@ -344,19 +344,19 @@ function AuctionarySellingTabFrameMixin:ScanBags()
 
   -- Good to sell: the latest scan (today or yesterday) saw the item at least
   -- 10% above its average
-  if Auctionator.Database ~= nil then
-    local days = Auctionator.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
+  if Auctionary.Database ~= nil then
+    local days = Auctionary.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
     for _, item in ipairs(items) do
       item.goodPercent = nil
       item.badPercent = nil
-      Auctionator.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
+      Auctionary.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
         local dbKey = dbKeys[1]
         if dbKey == nil then
           return
         end
-        local price = Auctionator.Database:GetPrice(dbKey)
-        local average = Auctionator.Database:GetScanAverage(dbKey, days)
-        local age = Auctionator.Database:GetPriceAge(dbKey)
+        local price = Auctionary.Database:GetPrice(dbKey)
+        local average = Auctionary.Database:GetScanAverage(dbKey, days)
+        local age = Auctionary.Database:GetPriceAge(dbKey)
         if price ~= nil and average ~= nil and average > 0 and age ~= nil and age <= 1 then
           if price >= average * GOOD_TO_SELL_FACTOR then
             item.goodPercent = math.floor(price / average * 100 - 100 + 0.5)
@@ -368,7 +368,7 @@ function AuctionarySellingTabFrameMixin:ScanBags()
     end
   end
 
-  local favourites = Auctionator.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
+  local favourites = Auctionary.Config.Get(Options.SELLING_FAVOURITE_KEYS) or {}
   local present = {}
   for _, item in ipairs(items) do
     local favouriteKey = FavouriteKey(item)
@@ -391,7 +391,7 @@ function AuctionarySellingTabFrameMixin:ScanBags()
           quality = quality,
           iconTexture = texture,
           maxStack = maxStack or 1,
-          classID = Auctionator.Compat.GetItemClassID(itemLink) or 99,
+          classID = Auctionary.Compat.GetItemClassID(itemLink) or 99,
           total = 0,
           locations = {},
           isFavourite = true,
@@ -566,10 +566,10 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
   self.HistoryButton:SetText("History")
   self.HistoryButton:SetScript("OnClick", function()
     if self.selected ~= nil then
-      Auctionator.Components.ShowHistory(self.selected.itemLink, IsShiftKeyDown() and "posting" or "price")
+      Auctionary.Components.ShowHistory(self.selected.itemLink, IsShiftKeyDown() and "posting" or "price")
     else
       -- Nothing chosen: everything that was posted
-      Auctionator.Components.ShowAllPostings()
+      Auctionary.Components.ShowAllPostings()
     end
   end)
   self.HistoryButton:SetScript("OnEnter", function(button)
@@ -585,7 +585,7 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
   self.SalesButton:SetPoint("RIGHT", self.HistoryButton, "LEFT", -4, 0)
   self.SalesButton:SetText("Sales")
   self.SalesButton:SetScript("OnClick", function()
-    Auctionator.Components.ShowSales()
+    Auctionary.Components.ShowSales()
   end)
   self.SalesButton:SetScript("OnEnter", function(button)
     GameTooltip:SetOwner(button, "ANCHOR_BOTTOM")
@@ -642,7 +642,7 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
     box:SetScript("OnEscapePressed", function(editBox) editBox:ClearFocus() end)
     box:SetScript("OnEnterPressed", function(editBox)
       editBox:ClearFocus()
-      if Auctionator.Config.Get(Options.SELLING_POST_ON_ENTER) then
+      if Auctionary.Config.Get(Options.SELLING_POST_ON_ENTER) then
         self:Post()
       end
     end)
@@ -670,7 +670,7 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
     if box ~= nil and box.SetScript ~= nil then
       box:SetScript("OnEnterPressed", function(editBox)
         editBox:ClearFocus()
-        if Auctionator.Config.Get(Options.SELLING_POST_ON_ENTER) then
+        if Auctionary.Config.Get(Options.SELLING_POST_ON_ENTER) then
           self:Post()
         end
       end)
@@ -690,7 +690,7 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
     hoursLabel:SetText(tostring(hours))
     radio:SetScript("OnClick", function()
       self:SetDuration(hours)
-      Auctionator.Config.Set(Options.AUCTION_DURATION, hours)
+      Auctionary.Config.Set(Options.AUCTION_DURATION, hours)
     end)
     self.DurationButtons[hours] = radio
   end
@@ -703,8 +703,8 @@ function AuctionarySellingTabFrameMixin:CreateSaleControls()
   self.TotalText = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   self.TotalText:SetPoint("TOPLEFT", self, "TOPLEFT", 706, row2)
 
-  local duration = Auctionator.Config.Get(Options.AUCTION_DURATION)
-  if Auctionator.Constants.DurationToRunTime[duration] == nil then
+  local duration = Auctionary.Config.Get(Options.AUCTION_DURATION)
+  if Auctionary.Constants.DurationToRunTime[duration] == nil then
     duration = 24
   end
   self:SetDuration(duration)
@@ -725,18 +725,18 @@ end
 ---- Current prices
 
 function AuctionarySellingTabFrameMixin:CreatePrices()
-  self.PricesProvider = Auctionator.Components.CreateDataProvider({
+  self.PricesProvider = Auctionary.Components.CreateDataProvider({
     layout = PRICES_TABLE_LAYOUT,
     uniqueKey = function(entry) return entry.key end,
     comparators = {
-      unitPrice = Auctionator.Utilities.NumberComparator,
-      stackPrice = Auctionator.Utilities.NumberComparator,
-      stackSize = Auctionator.Utilities.NumberComparator,
-      owner = Auctionator.Utilities.StringComparator,
-      ownedText = Auctionator.Utilities.StringComparator,
+      unitPrice = Auctionary.Utilities.NumberComparator,
+      stackPrice = Auctionary.Utilities.NumberComparator,
+      stackSize = Auctionary.Utilities.NumberComparator,
+      owner = Auctionary.Utilities.StringComparator,
+      ownedText = Auctionary.Utilities.StringComparator,
     },
   })
-  self.PricesListing = Auctionator.Components.CreateResultsListing(self, self.PricesProvider, {
+  self.PricesListing = Auctionary.Components.CreateResultsListing(self, self.PricesProvider, {
     onRowClick = function(rowData)
       -- Price yourself against this auction
       if rowData.isOwned then
@@ -754,10 +754,10 @@ end
 -- The price to post at to be cheaper than the given one
 function AuctionarySellingTabFrameMixin:Undercut(price)
   local result
-  if Auctionator.Config.Get(Options.AUCTION_SALES_PREFERENCE) == Auctionator.Config.SalesTypes.STATIC then
-    result = price - Auctionator.Config.Get(Options.UNDERCUT_STATIC_VALUE)
+  if Auctionary.Config.Get(Options.AUCTION_SALES_PREFERENCE) == Auctionary.Config.SalesTypes.STATIC then
+    result = price - Auctionary.Config.Get(Options.UNDERCUT_STATIC_VALUE)
   else
-    result = math.floor(price * (100 - Auctionator.Config.Get(Options.UNDERCUT_PERCENTAGE)) / 100)
+    result = math.floor(price * (100 - Auctionary.Config.Get(Options.UNDERCUT_PERCENTAGE)) / 100)
   end
   -- Nothing configured: one copper less, the usual way to be first in the list
   if result >= price then
@@ -774,7 +774,7 @@ end
 function AuctionarySellingTabFrameMixin:StopSearch()
   if self.searching then
     self.searching = false
-    Auctionator.AH.AbortQuery()
+    Auctionary.AH.AbortQuery()
   end
 end
 
@@ -789,7 +789,7 @@ function AuctionarySellingTabFrameMixin:SearchPrices()
   self.searchKey = item.key
   self.PricesProvider:SetEntries({})
   self:SetStatus((SEARCHING or "Searching") .. " ...")
-  Auctionator.AH.QueryAuctionItems({ searchString = item.name, isExact = true })
+  Auctionary.AH.QueryAuctionItems({ searchString = item.name, isExact = true })
 end
 
 function AuctionarySellingTabFrameMixin:ReceiveEvent(eventName, results, gotAllResults)
@@ -797,7 +797,7 @@ function AuctionarySellingTabFrameMixin:ReceiveEvent(eventName, results, gotAllR
     return
   end
 
-  if eventName == Auctionator.AH.Events.ScanResultsUpdate then
+  if eventName == Auctionary.AH.Events.ScanResultsUpdate then
     for _, auction in ipairs(results) do
       -- Same name, but only the same item (and suffix) is a competitor
       if GroupKey(auction.itemLink) == self.searchKey then
@@ -808,7 +808,7 @@ function AuctionarySellingTabFrameMixin:ReceiveEvent(eventName, results, gotAllR
       self.searching = false
       self:ShowPrices()
     end
-  elseif eventName == Auctionator.AH.Events.ScanAborted then
+  elseif eventName == Auctionary.AH.Events.ScanAborted then
     self.searching = false
     self:SetStatus("")
   end
@@ -840,9 +840,9 @@ function AuctionarySellingTabFrameMixin:ShowPrices()
       end
     end
     if market ~= nil then
-      Auctionator.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
+      Auctionary.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
         if dbKeys[1] ~= nil then
-          Auctionator.Database:SetPrice(dbKeys[1], market, total)
+          Auctionary.Database:SetPrice(dbKeys[1], market, total)
         end
       end)
     end
@@ -863,11 +863,11 @@ function AuctionarySellingTabFrameMixin:ShowPrices()
   else
     -- No competition: 10% above the average price, else the last price seen
     local known, average
-    Auctionator.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
-      known = Auctionator.Database:GetFirstPrice(dbKeys)
+    Auctionary.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
+      known = Auctionary.Database:GetFirstPrice(dbKeys)
       if dbKeys[1] ~= nil then
-        average = Auctionator.Database:GetScanAverage(
-          dbKeys[1], Auctionator.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
+        average = Auctionary.Database:GetScanAverage(
+          dbKeys[1], Auctionary.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
         )
       end
     end)
@@ -938,7 +938,7 @@ function AuctionarySellingTabFrameMixin:SelectItem(item)
 
   if not self:PlaceInSellSlot(item) then
     self.selected = nil
-    self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
+    self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
       (ERR_AUCTION_BOUND_ITEM or "This item cannot be auctioned.")
     ))
     self:UpdateBagButtons()
@@ -963,7 +963,7 @@ function AuctionarySellingTabFrameMixin:SelectItem(item)
 
   local stackSize = math.min(item.maxStack, item.total)
   -- Configured default for this kind of item (0 = a full stack)
-  local defaults = Auctionator.Config.Get(Options.DEFAULT_QUANTITIES) or {}
+  local defaults = Auctionary.Config.Get(Options.DEFAULT_QUANTITIES) or {}
   local default = tonumber(defaults[item.classID]) or 0
   if default > 0 then
     stackSize = math.min(default, stackSize)
@@ -971,7 +971,7 @@ function AuctionarySellingTabFrameMixin:SelectItem(item)
   local numStacks = math.max(math.floor(item.total / stackSize), 1)
   -- What was posted last time for this item wins over the defaults, as far
   -- as the bags allow it
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   local last = state ~= nil and state.LastQuantities ~= nil and state.LastQuantities[item.key]
   if type(last) == "table" and (tonumber(last[1]) or 0) > 0 then
     stackSize = math.max(math.min(last[1], item.maxStack, item.total), 1)
@@ -995,14 +995,14 @@ end
 -- price stays.
 function AuctionarySellingTabFrameMixin:UseFreshScanPrice(item)
   self.quickDeadline = nil
-  local lastScan = Auctionator.State.LastFullScanTime
-  if lastScan == nil or GetTime() - lastScan > FRESH_SCAN_SECONDS or Auctionator.Database == nil then
+  local lastScan = Auctionary.State.LastFullScanTime
+  if lastScan == nil or GetTime() - lastScan > FRESH_SCAN_SECONDS or Auctionary.Database == nil then
     return
   end
   local price
-  Auctionator.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
-    if dbKeys[1] ~= nil and Auctionator.Database:GetPriceAge(dbKeys[1]) == 0 then
-      price = Auctionator.Database:GetPrice(dbKeys[1])
+  Auctionary.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
+    if dbKeys[1] ~= nil and Auctionary.Database:GetPriceAge(dbKeys[1]) == 0 then
+      price = Auctionary.Database:GetPrice(dbKeys[1])
     end
   end)
   if price == nil or price <= 0 then
@@ -1039,7 +1039,7 @@ function AuctionarySellingTabFrameMixin:GetPostDetails()
     numStacks = numStacks,
     unitPrice = unitPrice,
     stackPrice = unitPrice * stackSize,
-    runTime = Auctionator.Constants.DurationToRunTime[self.duration],
+    runTime = Auctionary.Constants.DurationToRunTime[self.duration],
   }
 end
 
@@ -1051,7 +1051,7 @@ function AuctionarySellingTabFrameMixin:UpdateEnterBinding()
     return
   end
   local enabled = self.PostButton:IsEnabled()
-  local useEnter = Auctionator.Config.Get(Options.SELLING_POST_ON_ENTER) and true or false
+  local useEnter = Auctionary.Config.Get(Options.SELLING_POST_ON_ENTER) and true or false
   local wanted = useEnter and self:IsVisible() and (enabled == 1 or enabled == true) and true or false
   if self.enterLabelShown ~= useEnter then
     self.enterLabelShown = useEnter
@@ -1097,7 +1097,7 @@ function AuctionarySellingTabFrameMixin:UpdateControlsInner()
     self.TotalText:SetText("")
     self.PostButton:Disable()
     if problem ~= nil then
-      self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(problem))
+      self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(problem))
     end
   end
 end
@@ -1114,16 +1114,16 @@ function AuctionarySellingTabFrameMixin:GetLowPriceWarning(item, unitPrice)
   end
   local reference = self.lowestOther
   if reference == nil then
-    Auctionator.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
+    Auctionary.Utilities.DBKeyFromLink(item.itemLink, function(dbKeys)
       if dbKeys[1] ~= nil then
-        reference = Auctionator.Database:GetScanAverage(
-          dbKeys[1], Auctionator.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
+        reference = Auctionary.Database:GetScanAverage(
+          dbKeys[1], Auctionary.Config.Get(Options.AUCTION_MEAN_DAYS_LIMIT)
         )
       end
     end)
   end
   if reference ~= nil and reference > 0
-     and unitPrice < Auctionator.Utilities.PriceWarningThreshold(reference) then
+     and unitPrice < Auctionary.Utilities.PriceWarningThreshold(reference) then
     return "Far below the market (" .. Money(reference) .. ")."
   end
 end
@@ -1136,12 +1136,12 @@ function AuctionarySellingTabFrameMixin:Post()
     return
   end
   -- Far below the market or below what a vendor pays: ask for a second click
-  if Auctionator.Config.Get(Options.SELLING_WARN_LOW_PRICE) then
+  if Auctionary.Config.Get(Options.SELLING_WARN_LOW_PRICE) then
     local warning = self:GetLowPriceWarning(item, details.unitPrice)
     local token = item.key .. ":" .. details.unitPrice
     if warning ~= nil and self.lowPriceConfirmed ~= token then
       self.lowPriceConfirmed = token
-      self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
+      self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
         warning .. " Click Post again to post anyway."
       ))
       return
@@ -1154,7 +1154,7 @@ function AuctionarySellingTabFrameMixin:Post()
   local name = GetAuctionSellItemInfo()
   if name ~= item.name then
     if not self:PlaceInSellSlot(item) then
-      self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode("Could not put the item up for sale."))
+      self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode("Could not put the item up for sale."))
       return
     end
   end
@@ -1179,9 +1179,9 @@ function AuctionarySellingTabFrameMixin:Post()
   self:RegisterEvent("UI_ERROR_MESSAGE")
 
   -- Remembered per item for the next time it is selected
-  if Auctionator.SavedState ~= nil and item.key ~= nil then
-    Auctionator.SavedState.LastQuantities = Auctionator.SavedState.LastQuantities or {}
-    Auctionator.SavedState.LastQuantities[item.key] = { details.stackSize, details.numStacks }
+  if Auctionary.SavedState ~= nil and item.key ~= nil then
+    Auctionary.SavedState.LastQuantities = Auctionary.SavedState.LastQuantities or {}
+    Auctionary.SavedState.LastQuantities[item.key] = { details.stackSize, details.numStacks }
   end
 
   -- Starting bid equal to the buyout: nobody gets it cheaper by bidding
@@ -1201,16 +1201,16 @@ function AuctionarySellingTabFrameMixin:FinishPosting(created, message)
   self:UnregisterEvent("UI_ERROR_MESSAGE")
 
   local details, item = posting.details, posting.item
-  if created > 0 and Auctionator.GoldLog ~= nil and (posting.deposit or 0) > 0 then
-    Auctionator.GoldLog.Add("d", item.name, item.itemLink, created * details.stackSize,
+  if created > 0 and Auctionary.GoldLog ~= nil and (posting.deposit or 0) > 0 then
+    Auctionary.GoldLog.Add("d", item.name, item.itemLink, created * details.stackSize,
       math.floor(posting.deposit * created / math.max(details.numStacks, 1)), "Selling")
   end
   if created > 0 then
     local text = ("Posted %d x %d %s at %s each"):format(
       created, details.stackSize, item.itemLink, Money(details.unitPrice)
     )
-    Auctionator.Utilities.Message(text)
-    Auctionator.EventBus:Fire(self, Auctionator.Selling.Events.AuctionCreated, {
+    Auctionary.Utilities.Message(text)
+    Auctionary.EventBus:Fire(self, Auctionary.Selling.Events.AuctionCreated, {
       itemLink = item.itemLink,
       quantity = created * details.stackSize,
       buyoutAmount = details.unitPrice,
@@ -1224,18 +1224,18 @@ function AuctionarySellingTabFrameMixin:FinishPosting(created, message)
     -- Repost round: on to the next item once the bags have caught up
     self.repostDone = self.repostDone or {}
     self.repostDone[item.key] = true
-    Auctionator.Compat.After(0.6, function()
+    Auctionary.Compat.After(0.6, function()
       if self.repostActive and self:IsVisible() and not self.posting and self.selected == nil then
         self:PostNext(false)
       end
     end)
   end
   if created < details.numStacks then
-    self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
+    self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
       message or ("Only " .. created .. " of " .. details.numStacks .. " stacks were posted.")
     ))
   else
-    self:SetStatus(Auctionator.Compat.Colors.GREEN_FONT_COLOR:WrapTextInColorCode(
+    self:SetStatus(Auctionary.Compat.Colors.GREEN_FONT_COLOR:WrapTextInColorCode(
       "Posted " .. created .. " x " .. details.stackSize .. " " .. item.name
     ))
   end
@@ -1282,7 +1282,7 @@ function AuctionarySellingTabFrameMixin:IsRepostCandidate(item)
   if item.missing or self.repostDone[item.key] then
     return false
   end
-  local state = Auctionator.SavedState
+  local state = Auctionary.SavedState
   return item.isFavourite == true
     or (state ~= nil and state.LastQuantities ~= nil and state.LastQuantities[item.key] ~= nil)
 end
@@ -1375,7 +1375,7 @@ function AuctionarySellingTabFrameMixin:OnItemDropped()
       return
     end
   end
-  self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode("That item cannot be sold in the auction house."))
+  self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode("That item cannot be sold in the auction house."))
 end
 
 function AuctionarySellingTabFrameMixin:OnUpdate(elapsed)
@@ -1412,10 +1412,10 @@ function AuctionarySellingTabFrameMixin:OnUpdate(elapsed)
   end
 end
 
-Auctionator.Tabs.RegisterContent("Selling", function(panel)
+Auctionary.Tabs.RegisterContent("Selling", function(panel)
   local frame = CreateFrame("Frame", "AuctionarySellingTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionator.Compat.Mixin(frame, AuctionarySellingTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionarySellingTabFrameMixin)
   frame:OnLoad()
   panel.Content = frame
 end)

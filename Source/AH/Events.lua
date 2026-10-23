@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.AH.Events = {
+Auctionary.AH.Events = {
   Ready = "AH_READY",
   ThrottleUpdate = "ah_throttle_update",
 
@@ -9,9 +9,9 @@ Auctionator.AH.Events = {
   ScanResultsUpdate = "ah_scan_results_update",
   -- ()
   ScanAborted = "ah_scan_aborted",
-  -- (results, total) answer to Auctionator.AH.QueryAndFocusPage
+  -- (results, total) answer to Auctionary.AH.QueryAndFocusPage
   CurrentPage = "ah_current_page",
-  -- (auctions) answer to Auctionator.AH.QueryOwnedAuctions
+  -- (auctions) answer to Auctionary.AH.QueryOwnedAuctions
   OwnedAuctionsUpdate = "ah_owned_auctions_update",
   -- () auction house window opened/closed
   Opened = "ah_opened",
@@ -19,7 +19,7 @@ Auctionator.AH.Events = {
 }
 
 -- Positions in the values returned by GetAuctionItemInfo in the 3.3.5 client
-Auctionator.Constants.AuctionItemInfo = {
+Auctionary.Constants.AuctionItemInfo = {
   Name = 1,
   Texture = 2,
   Quantity = 3,

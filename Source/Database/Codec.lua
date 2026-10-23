@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Price history of one item is kept as one printable string in the saved
 -- variables (the original uses binary CBOR, which is not safe to store with
@@ -7,13 +7,13 @@ local Auctionator = Auctionary
 --
 -- Format:  m;day:high:low:available:sum:count,day:high:low:available:sum:count,...
 --   m          last seen minimum price
---   day        days since Auctionator.Constants.SCAN_DAY_0
+--   day        days since Auctionary.Constants.SCAN_DAY_0
 --   high       highest minimum price seen that day
 --   low        lowest minimum price seen that day (empty if same as high)
 --   available  highest quantity seen that day (empty if unknown)
 --   sum, count sum of the minimum prices of all scans of that day and how
 --              many scans that were (missing in data of older versions)
-Auctionator.DatabaseCodec = {}
+Auctionary.DatabaseCodec = {}
 
 local function Num(value)
   if value == nil then
@@ -25,7 +25,7 @@ local function Num(value)
   end
 end
 
-function Auctionator.DatabaseCodec.Serialize(itemData)
+function Auctionary.DatabaseCodec.Serialize(itemData)
   local days = {}
   for day, high in pairs(itemData.h) do
     table.insert(days,
@@ -36,7 +36,7 @@ function Auctionator.DatabaseCodec.Serialize(itemData)
   return Num(itemData.m or 0) .. ";" .. table.concat(days, ",")
 end
 
-function Auctionator.DatabaseCodec.Deserialize(text)
+function Auctionary.DatabaseCodec.Deserialize(text)
   local itemData = { m = 0, h = {}, l = {}, a = {}, s = {}, n = {} }
   local minPrice, rest = strsplit(";", text, 2)
   itemData.m = tonumber(minPrice) or 0

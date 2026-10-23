@@ -1,11 +1,11 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- Positions in the return values of the 3.3.5 GetItemInfo:
 --   name, link, quality, itemLevel, requiredLevel, type, subType, maxStack,
 --   equipSlot, texture, vendorPrice
 -- There is no class ID, bind type or expansion in this client. Use
--- Auctionator.Compat.GetItemClassID and Auctionator.Utilities.IsBound instead.
-Auctionator.Constants.ITEM_INFO = {
+-- Auctionary.Compat.GetItemClassID and Auctionary.Utilities.IsBound instead.
+Auctionary.Constants.ITEM_INFO = {
   NAME = 1,
   LINK = 2,
   RARITY = 3,

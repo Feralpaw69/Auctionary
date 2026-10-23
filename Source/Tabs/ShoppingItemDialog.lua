@@ -1,4 +1,4 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- The extended search options: name, category, level, item level, price,
 -- quality and quantity. Used for searching and for editing list entries.
@@ -194,9 +194,9 @@ function AuctionaryShoppingItemMixin:InitializeCategoryMenu(level)
       CloseDropDownMenus()
     end
     UIDropDownMenu_AddButton(info, level)
-    entries = Auctionator.Search.GetLegacyCategoryTree()
+    entries = Auctionary.Search.GetLegacyCategoryTree()
   else
-    local parent = Auctionator.Search.GetLegacyCategory(UIDROPDOWNMENU_MENU_VALUE)
+    local parent = Auctionary.Search.GetLegacyCategory(UIDROPDOWNMENU_MENU_VALUE)
     entries = parent and parent.subCategories or {}
   end
 
@@ -219,7 +219,7 @@ function AuctionaryShoppingItemMixin:SetQuality(quality)
   if quality == nil then
     UIDropDownMenu_SetText(self.QualityDropDown, AUCTIONARY_L_ANY_UPPER or "Any")
   else
-    UIDropDownMenu_SetText(self.QualityDropDown, Auctionator.Utilities.CreateColoredQuality(quality))
+    UIDropDownMenu_SetText(self.QualityDropDown, Auctionary.Utilities.CreateColoredQuality(quality))
   end
 end
 
@@ -232,9 +232,9 @@ function AuctionaryShoppingItemMixin:InitializeQualityMenu()
   end
   UIDropDownMenu_AddButton(info)
 
-  for _, quality in ipairs(Auctionator.Constants.QualityIDs) do
+  for _, quality in ipairs(Auctionary.Constants.QualityIDs) do
     info = UIDropDownMenu_CreateInfo()
-    info.text = Auctionator.Utilities.CreateColoredQuality(quality)
+    info.text = Auctionary.Utilities.CreateColoredQuality(quality)
     info.notCheckable = 1
     info.func = function()
       self:SetQuality(quality)
@@ -256,11 +256,11 @@ function AuctionaryShoppingItemMixin:OnFinishedClicked()
   local itemString = self:GetItemString()
   self:Hide()
 
-  local hasInfo = itemString:gsub(Auctionator.Constants.AdvancedSearchDivider, ""):gsub("\"", ""):gsub("#", ""):len() > 0
+  local hasInfo = itemString:gsub(Auctionary.Constants.AdvancedSearchDivider, ""):gsub("\"", ""):gsub("#", ""):len() > 0
   if hasInfo then
     self.onFinishedClicked(itemString)
   else
-    Auctionator.Utilities.Message(AUCTIONARY_L_NO_ITEM_INFO_SPECIFIED or "No item info was specified.")
+    Auctionary.Utilities.Message(AUCTIONARY_L_NO_ITEM_INFO_SPECIFIED or "No item info was specified.")
   end
 end
 
@@ -269,7 +269,7 @@ function AuctionaryShoppingItemMixin:GetItemString()
   local minItemLevel, maxItemLevel = self.ItemLevelRange:Get()
   local minPrice, maxPrice = self.PriceRange:Get()
 
-  return Auctionator.Search.ReconstituteAdvancedSearch({
+  return Auctionary.Search.ReconstituteAdvancedSearch({
     searchString = strtrim(self.SearchString:GetText()),
     isExact = self.IsExact:GetChecked() and true or false,
     categoryKey = self.categoryKey,
@@ -285,7 +285,7 @@ function AuctionaryShoppingItemMixin:GetItemString()
 end
 
 function AuctionaryShoppingItemMixin:SetItemString(itemString)
-  local search = Auctionator.Search.SplitAdvancedSearch(itemString or "")
+  local search = Auctionary.Search.SplitAdvancedSearch(itemString or "")
 
   self.SearchString:SetText(search.searchString or "")
   self.IsExact:SetChecked(search.isExact)
@@ -301,9 +301,9 @@ function AuctionaryShoppingItemMixin:ResetAll()
   self:SetItemString("")
 end
 
-function Auctionator.Shopping.CreateItemDialog(parent)
+function Auctionary.Shopping.CreateItemDialog(parent)
   local dialog = CreateFrame("Frame", NAME, parent)
-  Auctionator.Compat.Mixin(dialog, AuctionaryShoppingItemMixin)
+  Auctionary.Compat.Mixin(dialog, AuctionaryShoppingItemMixin)
   dialog:Hide()
   dialog:OnLoad()
   dialog:SetPoint("CENTER", parent, "CENTER", 0, 0)

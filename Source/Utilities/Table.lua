@@ -1,9 +1,9 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 
 -- https://coronalabs.com/blog/2014/09/02/tutorial-printing-table-contents/
-function Auctionator.Utilities.TablePrint( t, name )
-  if not Auctionator.Debug.IsOn() then
+function Auctionary.Utilities.TablePrint( t, name )
+  if not Auctionary.Debug.IsOn() then
     return
   end
 
@@ -47,7 +47,7 @@ function Auctionator.Utilities.TablePrint( t, name )
   print()
 end
 
-function Auctionator.Utilities.FlatPrint( t )
+function Auctionary.Utilities.FlatPrint( t )
   local buffer = {}
 
   for position, value in pairs( t ) do
@@ -57,7 +57,7 @@ function Auctionator.Utilities.FlatPrint( t )
   print( [[{]] .. table.concat( buffer, ',' ) .. [[}]] )
 end
 
-function Auctionator.Utilities.UTF8_Truncate( string, options )
+function Auctionary.Utilities.UTF8_Truncate( string, options )
   options = options or {}
   local newLength = options.newLength or 127
 

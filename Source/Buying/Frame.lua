@@ -1,12 +1,12 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
 -- The list of single auctions of one item with a button to buy them, shown in
 -- the Shopping tab after picking a search result. A 3.3.5 server only sells
 -- whole auctions (stacks), so that is what gets bought.
 AuctionaryBuyFrameMixin = {}
 
-local AuctionItemInfo = Auctionator.Constants.AuctionItemInfo
-local PAGE_SIZE = Auctionator.Constants.PageSize
+local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
+local PAGE_SIZE = Auctionary.Constants.PageSize
 local BUY_TIMEOUT = 6
 
 local TIME_LEFT = {
@@ -46,22 +46,22 @@ local BUY_TABLE_LAYOUT = {
 }
 
 local BUY_EVENTS = {
-  Auctionator.AH.Events.CurrentPage,
-  Auctionator.AH.Events.ScanAborted,
+  Auctionary.AH.Events.CurrentPage,
+  Auctionary.AH.Events.ScanAborted,
 }
 
 function AuctionaryBuyFrameMixin:OnLoad()
-  Auctionator.EventBus:RegisterSource(self, "AuctionaryBuyFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "AuctionaryBuyFrameMixin")
 
-  self.DataProvider = Auctionator.Components.CreateDataProvider({
+  self.DataProvider = Auctionary.Components.CreateDataProvider({
     layout = BUY_TABLE_LAYOUT,
     uniqueKey = function(entry) return entry.key end,
     comparators = {
-      unitPrice = Auctionator.Utilities.NumberComparator,
-      stackPrice = Auctionator.Utilities.NumberComparator,
-      stackSize = Auctionator.Utilities.NumberComparator,
-      timeLeft = Auctionator.Utilities.NumberComparator,
-      owner = Auctionator.Utilities.StringComparator,
+      unitPrice = Auctionary.Utilities.NumberComparator,
+      stackPrice = Auctionary.Utilities.NumberComparator,
+      stackSize = Auctionary.Utilities.NumberComparator,
+      timeLeft = Auctionary.Utilities.NumberComparator,
+      owner = Auctionary.Utilities.StringComparator,
     },
   })
 
@@ -151,7 +151,7 @@ function AuctionaryBuyFrameMixin:OnLoad()
   self.HistoryButton:SetText("Price History")
   self.HistoryButton:SetScript("OnClick", function()
     if self.result ~= nil then
-      Auctionator.Components.ShowHistory(self.result.itemLink)
+      Auctionary.Components.ShowHistory(self.result.itemLink)
     end
   end)
 
@@ -160,7 +160,7 @@ function AuctionaryBuyFrameMixin:OnLoad()
   self.Status:SetPoint("RIGHT", self.quantityLabel, "LEFT", -8, 0)
   self.Status:SetJustifyH("LEFT")
 
-  self.ResultsListing = Auctionator.Components.CreateResultsListing(self, self.DataProvider, {
+  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
     onRowClick = function(rowData)
       if not self.bidding then
         self.selectedKey = rowData.key
@@ -190,8 +190,8 @@ function AuctionaryBuyFrameMixin:OnLoad()
       self:UpdateSelection()
     end
   end
-  local Options = Auctionator.Config.Options
-  self.keys = Auctionator.Keys.Create({
+  local Options = Auctionary.Config.Options
+  self.keys = Auctionary.Keys.Create({
     UP = function() Step(-1) end,
     DOWN = function() Step(1) end,
     ENTER = function()
@@ -205,9 +205,9 @@ function AuctionaryBuyFrameMixin:OnLoad()
       return false
     end
     if key == "ENTER" then
-      return Auctionator.Config.Get(Options.SHOPPING_BUY_ON_ENTER)
+      return Auctionary.Config.Get(Options.SHOPPING_BUY_ON_ENTER)
     end
-    return Auctionator.Config.Get(Options.KEYS_SHOPPING)
+    return Auctionary.Config.Get(Options.KEYS_SHOPPING)
   end)
 
   self:SetScript("OnHide", function()
@@ -229,11 +229,11 @@ function AuctionaryBuyFrameMixin:Open(result)
   self.confirmed = nil
   self.QuantityBox:SetText("")
   self.average = nil
-  if result.itemLink ~= nil and Auctionator.Database ~= nil then
-    Auctionator.Utilities.DBKeyFromLink(result.itemLink, function(dbKeys)
+  if result.itemLink ~= nil and Auctionary.Database ~= nil then
+    Auctionary.Utilities.DBKeyFromLink(result.itemLink, function(dbKeys)
       if dbKeys[1] ~= nil then
-        self.average = Auctionator.Database:GetScanAverage(
-          dbKeys[1], Auctionator.Config.Get(Auctionator.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
+        self.average = Auctionary.Database:GetScanAverage(
+          dbKeys[1], Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
         )
       end
     end)
@@ -258,7 +258,7 @@ end
 -- Identical stacks of one seller become one row
 function AuctionaryBuyFrameMixin:BuildRows(auctions)
   local playerName = UnitName("player")
-  local isOwnAuction = Auctionator.AH.GetOwnAuctionChecker()
+  local isOwnAuction = Auctionary.AH.GetOwnAuctionChecker()
   local byKey, rows = {}, {}
 
   for _, auction in ipairs(auctions) do
@@ -365,9 +365,9 @@ function AuctionaryBuyFrameMixin:CancelLocating()
   if locating ~= nil then
     self.locating = nil
     if locating.registered then
-      Auctionator.EventBus:Unregister(self, BUY_EVENTS)
+      Auctionary.EventBus:Unregister(self, BUY_EVENTS)
     end
-    Auctionator.AH.AbortQuery()
+    Auctionary.AH.AbortQuery()
   end
 end
 
@@ -393,7 +393,7 @@ function AuctionaryBuyFrameMixin:Prepare()
   local auction = row.auctions[#row.auctions]
 
   -- Still on the page the client shows?
-  if Auctionator.AH.FindAuctionIndex("list", auction) ~= nil and not Auctionator.AH.IsQueryActive() then
+  if Auctionary.AH.FindAuctionIndex("list", auction) ~= nil and not Auctionary.AH.IsQueryActive() then
     self:SetReady(row, auction)
     return
   end
@@ -412,7 +412,7 @@ function AuctionaryBuyFrameMixin:Prepare()
   }
   self:TryNextPage()
   if self.locating ~= nil then
-    Auctionator.EventBus:Register(self, BUY_EVENTS)
+    Auctionary.EventBus:Register(self, BUY_EVENTS)
     self.locating.registered = true
   end
 end
@@ -426,11 +426,11 @@ function AuctionaryBuyFrameMixin:TryNextPage()
   if page == nil then
     self:CancelLocating()
     self:RemoveAuction(locating.row, locating.auction)
-    self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(GONE_TEXT))
+    self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(GONE_TEXT))
     return
   end
   locating.tried[page] = true
-  Auctionator.AH.QueryAndFocusPage(locating.query, page)
+  Auctionary.AH.QueryAndFocusPage(locating.query, page)
 end
 
 -- What the wanted quantity costs when the cheapest stacks are bought one
@@ -466,12 +466,12 @@ function AuctionaryBuyFrameMixin:SetReady(row, auction)
   self.ready = { row = row, auction = auction }
   self.BuyButton:Enable()
   local text = row.stackSize .. " x " .. self.result.name .. ": "
-    .. Auctionator.Compat.GetMoneyString(row.stackPrice, true)
+    .. Auctionary.Compat.GetMoneyString(row.stackPrice, true)
   if self.wanted ~= nil then
     text = text .. "   (" .. self.wanted.left .. " more wanted"
     local cost, covered = self:EstimateWantedCost(self.wanted.left)
     if cost > 0 then
-      text = text .. ", together " .. Auctionator.Compat.GetMoneyString(cost, true)
+      text = text .. ", together " .. Auctionary.Compat.GetMoneyString(cost, true)
       if covered < self.wanted.left then
         text = text .. " for the " .. covered .. " available"
       end
@@ -487,10 +487,10 @@ function AuctionaryBuyFrameMixin:ReceiveEvent(eventName, results, total)
     return
   end
 
-  if eventName == Auctionator.AH.Events.CurrentPage then
-    if Auctionator.AH.FindAuctionIndex("list", locating.auction) ~= nil then
+  if eventName == Auctionary.AH.Events.CurrentPage then
+    if Auctionary.AH.FindAuctionIndex("list", locating.auction) ~= nil then
       self.locating = nil
-      Auctionator.EventBus:Unregister(self, BUY_EVENTS)
+      Auctionary.EventBus:Unregister(self, BUY_EVENTS)
       self:SetReady(locating.row, locating.auction)
     else
       -- Not on this page (any more): look through the other pages
@@ -501,10 +501,10 @@ function AuctionaryBuyFrameMixin:ReceiveEvent(eventName, results, total)
       end
       self:TryNextPage()
     end
-  elseif eventName == Auctionator.AH.Events.ScanAborted then
+  elseif eventName == Auctionary.AH.Events.ScanAborted then
     -- Auction house closed or another search took over
     self.locating = nil
-    Auctionator.EventBus:Unregister(self, BUY_EVENTS)
+    Auctionary.EventBus:Unregister(self, BUY_EVENTS)
     self:SetStatus("")
   end
 end
@@ -524,21 +524,21 @@ function AuctionaryBuyFrameMixin:BuySelected()
   end
 
   -- The page may have changed since it was loaded
-  local index = Auctionator.AH.FindAuctionIndex("list", auction)
+  local index = Auctionary.AH.FindAuctionIndex("list", auction)
   if index == nil then
     self:Prepare()
     return
   end
 
   -- Far above the usual price: ask for a second click
-  if Auctionator.Config.Get(Auctionator.Config.Options.SHOPPING_CONFIRM_HIGH_PRICE)
+  if Auctionary.Config.Get(Auctionary.Config.Options.SHOPPING_CONFIRM_HIGH_PRICE)
      and self.average ~= nil and self.average > 0
      and ready.row.unitPrice > self.average * 1.5 and self.confirmed ~= auction then
     self.confirmed = auction
-    self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
+    self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(
       ("%d%% of the average price (%s). Click again to buy anyway."):format(
         math.floor(ready.row.unitPrice / self.average * 100),
-        Auctionator.Compat.GetMoneyString(self.average, true)
+        Auctionary.Compat.GetMoneyString(self.average, true)
       )
     ))
     return
@@ -631,13 +631,13 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
 
   local row = bidding.row
   if success then
-    if Auctionator.GoldLog ~= nil then
-      Auctionator.GoldLog.Add("b", self.result and self.result.name, row.itemLink, row.stackSize, row.stackPrice, "Shopping")
+    if Auctionary.GoldLog ~= nil then
+      Auctionary.GoldLog.Add("b", self.result and self.result.name, row.itemLink, row.stackSize, row.stackPrice, "Shopping")
     end
     self:RemoveAuction(row, bidding.auction)
-    Auctionator.Utilities.Message((AUCTIONARY_L_BUYING_X_FOR_X or "Buying %s for %s"):format(
+    Auctionary.Utilities.Message((AUCTIONARY_L_BUYING_X_FOR_X or "Buying %s for %s"):format(
       row.stackSize .. " x " .. self.result.name,
-      Auctionator.Compat.GetMoneyString(row.stackPrice, true)
+      Auctionary.Compat.GetMoneyString(row.stackPrice, true)
     ))
     local wanted = self.wanted
     if wanted ~= nil then
@@ -647,8 +647,8 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
       if wanted.left <= 0 then
         self.wanted = nil
         self.QuantityBox:SetText("")
-        Auctionator.Utilities.Message(("Bought %d x %s for %s in total."):format(
-          wanted.bought, self.result.name, Auctionator.Compat.GetMoneyString(wanted.spent, true)
+        Auctionary.Utilities.Message(("Bought %d x %s for %s in total."):format(
+          wanted.bought, self.result.name, Auctionary.Compat.GetMoneyString(wanted.spent, true)
         ))
       else
         self.QuantityBox:SetText(tostring(wanted.left))
@@ -657,8 +657,8 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
           self.selectedKey = cheapest.key
         else
           self.wanted = nil
-          Auctionator.Utilities.Message(("No more auctions. Bought %d x %s for %s."):format(
-            wanted.bought, self.result.name, Auctionator.Compat.GetMoneyString(wanted.spent, true)
+          Auctionary.Utilities.Message(("No more auctions. Bought %d x %s for %s."):format(
+            wanted.bought, self.result.name, Auctionary.Compat.GetMoneyString(wanted.spent, true)
           ))
         end
       end
@@ -667,14 +667,14 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
     self:UpdateSelection()
   else
     self.ResultsListing:Refresh()
-    self:SetStatus(Auctionator.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(message or ""))
+    self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(message or ""))
     -- The list has to be loaded again before another try; picking a row does that
   end
 end
 
-function Auctionator.Buying.CreateFrame(parent)
+function Auctionary.Buying.CreateFrame(parent)
   local frame = CreateFrame("Frame", "AuctionaryBuyFrame", parent)
-  Auctionator.Compat.Mixin(frame, AuctionaryBuyFrameMixin)
+  Auctionary.Compat.Mixin(frame, AuctionaryBuyFrameMixin)
   frame:Hide()
   frame:OnLoad()
   return frame

@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.SplitCommand(input)
+function Auctionary.Utilities.SplitCommand(input)
   local result = {}
   for match in string.gmatch(input:lower(), "%S+") do
     table.insert(result, match)

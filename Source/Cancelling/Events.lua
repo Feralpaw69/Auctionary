@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-Auctionator.Cancelling.Events = {
+Auctionary.Cancelling.Events = {
   RequestCancel = "request_auction_cancellation",
   RequestCancelUndercut = "request_cancel_undercut_macro",
   CancelConfirmed = "cancel_confirmed",

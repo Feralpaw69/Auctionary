@@ -1,6 +1,6 @@
-local Auctionator = Auctionary
+local Auctionary = Auctionary
 
-function Auctionator.Utilities.ReverseArray(array)
+function Auctionary.Utilities.ReverseArray(array)
   local result = {}
 
   for index = #array, 1, -1 do
