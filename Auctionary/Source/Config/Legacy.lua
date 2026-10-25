@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Options that the original keeps in its auction-house specific source
 -- folders, adjusted for the 3.3.5 auction house.
@@ -52,6 +53,9 @@ Options.SNIPING_DE_EXCLUDED_LEVELS = "sniping_de_excluded_levels"
 Options.DISENCHANT_TOOLTIPS = "disenchant_tooltips"
 Options.SHOPPING_CONFIRM_HIGH_PRICE = "shopping_confirm_high_price"
 Options.SELLING_WARN_LOW_PRICE = "selling_warn_low_price"
+Options.SELLING_BARGAIN_PERCENT = "selling_bargain_percent"
+Options.SELLING_SCAM_PROTECTION = "selling_scam_protection"
+Options.SELLING_SCAM_PERCENT = "selling_scam_percent"
 
 -- Sniping tab: which auctions count as cheap
 Defaults[Options.SNIPING_VENDOR] = true             -- buyout below the vendor sell price
@@ -100,6 +104,10 @@ Defaults[Options.SNIPING_DE_EXCLUDED_LEVELS] = {}     -- ["low-high"] = true
 Defaults[Options.DISENCHANT_TOOLTIPS] = true
 Defaults[Options.SHOPPING_CONFIRM_HIGH_PRICE] = true
 Defaults[Options.SELLING_WARN_LOW_PRICE] = true
+-- Gold coin in the Selling tab: buys the cheapest auction at or below this share of the average
+Defaults[Options.SELLING_BARGAIN_PERCENT] = 70
+Defaults[Options.SELLING_SCAM_PROTECTION] = true
+Defaults[Options.SELLING_SCAM_PERCENT] = 50
 
 Defaults[Options.SMALL_TABS] = false
 Defaults[Options.AUTOSCAN] = false

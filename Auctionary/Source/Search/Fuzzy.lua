@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Finds item names close to a mistyped search ("etrnl life" -> "Eternal
 -- Life"). The server only matches exact parts of names, so the names of all

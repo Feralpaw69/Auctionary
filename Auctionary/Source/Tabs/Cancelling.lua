@@ -1,8 +1,9 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- The Cancelling tab: the player's own auctions, a scan that finds the ones
 -- somebody else is selling cheaper, and buttons to cancel them.
-AuctionaryCancellingTabFrameMixin = {}
+local CancellingTab = {}
 
 local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 local EARLY_STOP_UNDERCUTS = 5  -- this many cheaper auctions (or as many as own ones are up): undercut for sure
@@ -24,40 +25,40 @@ local ICON_READY = "|TInterface\\RaidFrame\\ReadyCheck-Ready:14:14|t"
 local ICON_NOT_READY = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:14:14|t"
 local ICON_WAITING = "|TInterface\\RaidFrame\\ReadyCheck-Waiting:14:14|t"
 
-local CANCELLING_TABLE_LAYOUT = {
+local COLUMNS = {
   {
-    headerText = AUCTIONARY_L_RESULTS_NAME_COLUMN or "Name",
-    headerParameters = { "name" }, cellParameters = { "name" },
-    cellType = "item",
+    title = AUCTIONARY2_L_COL_NAME or "Name",
+    sort = "name", field = "name",
+    kind = "item",
   },
   {
-    headerText = STATUS or "Status",
-    headerParameters = { "status" }, cellParameters = { "statusText" },
+    title = STATUS or "Status",
+    sort = "status", field = "statusText",
     width = 150,
   },
   {
-    headerText = "Stack",
-    headerParameters = { "stackSize" }, cellParameters = { "stackSize" },
+    title = "Stack",
+    sort = "stackSize", field = "stackSize",
     width = 50,
   },
   {
-    headerText = AUCTIONARY_L_BUYOUT_PRICE or "Buyout Price",
-    headerParameters = { "stackPrice" }, cellParameters = { "stackPrice" },
-    cellType = "price", width = 110,
+    title = AUCTIONARY2_L_COL_BUYOUT or "Buyout Price",
+    sort = "stackPrice", field = "stackPrice",
+    kind = "price", width = 110,
   },
   {
-    headerText = AUCTIONARY_L_UNIT_PRICE or "Unit Price",
-    headerParameters = { "unitPrice" }, cellParameters = { "unitPrice" },
-    cellType = "price", width = 110,
+    title = AUCTIONARY2_L_COL_UNIT_PRICE or "Unit Price",
+    sort = "unitPrice", field = "unitPrice",
+    kind = "price", width = 110,
   },
   {
-    headerText = "Lowest Other",
-    headerParameters = { "lowestOther" }, cellParameters = { "lowestOther" },
-    cellType = "price", width = 110,
+    title = "Lowest Other",
+    sort = "lowestOther", field = "lowestOther",
+    kind = "price", width = 110,
   },
   {
-    headerText = AUCTIONARY_L_TIME_LEFT or "Time Left",
-    headerParameters = { "timeLeft" }, cellParameters = { "timeLeftText" },
+    title = AUCTIONARY2_L_COL_TIME_LEFT or "Time Left",
+    sort = "timeLeft", field = "timeLeftText",
     width = 80,
   },
 }
@@ -66,14 +67,17 @@ local function GroupKey(itemLink)
   return itemLink:match("item:(%-?%d+:%-?%d*:%-?%d*:%-?%d*:%-?%d*:%-?%d*:%-?%d*)") or itemLink
 end
 
-function AuctionaryCancellingTabFrameMixin:OnLoad()
-  Auctionary.EventBus:RegisterSource(self, "AuctionaryCancellingTabFrameMixin")
+function CancellingTab:OnLoad()
+  Auctionary.EventBus:RegisterSource(self, "CancellingTab")
 
   self.rows = {}
+  -- Rows marked for "Cancel Selected": [row key] = true. A click marks one
+  -- row; Alt + click or holding Alt while moving over rows marks more.
+  self.marked = {}
   -- [item key] = { lowestOther = unit price or false if nobody else sells it }
   self.market = {}
 
-  self.ScanButton = CreateFrame("Button", "AuctionaryCancellingScanButton", self, "UIPanelButtonTemplate")
+  self.ScanButton = CreateFrame("Button", "Auctionary2CancellingScanButton", self, "UIPanelButtonTemplate")
   self.ScanButton:SetWidth(150)
   self.ScanButton:SetHeight(22)
   self.ScanButton:SetPoint("TOPLEFT", self, "TOPLEFT", 88, -44)
@@ -89,7 +93,7 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
   -- Items hidden with a shift-click stay hidden until this button is used
   -- or the interface is loaded again
   self.hiddenItems = {}
-  self.ShowHiddenButton = CreateFrame("Button", "AuctionaryCancellingShowHiddenButton", self, "UIPanelButtonTemplate")
+  self.ShowHiddenButton = CreateFrame("Button", "Auctionary2CancellingShowHiddenButton", self, "UIPanelButtonTemplate")
   self.ShowHiddenButton:SetWidth(140)
   self.ShowHiddenButton:SetHeight(22)
   -- Total buyout of everything you have up, at the right end of the top bar
@@ -108,10 +112,10 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
   self.Status:SetPoint("RIGHT", self.ShowHiddenButton, "LEFT", -8, 0)
   self.Status:SetJustifyH("LEFT")
 
-  self.DataProvider = Auctionary.Components.CreateDataProvider({
-    layout = CANCELLING_TABLE_LAYOUT,
-    uniqueKey = function(entry) return entry.key end,
-    comparators = {
+  self.rowSet = Auctionary.Components.CreateRowSet({
+    columns = COLUMNS,
+    rowKey = function(entry) return entry.key end,
+    sorters = {
       name = Auctionary.Utilities.StringComparator,
       status = Auctionary.Utilities.NumberComparator,
       stackSize = Auctionary.Utilities.NumberComparator,
@@ -121,11 +125,16 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
       timeLeft = Auctionary.Utilities.NumberComparator,
     },
   })
-  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
+  self.rowTable = Auctionary.Components.CreateTable(self, self.rowSet, {
     onRowClick = function(rowData)
-      -- Shift-click hides the item, a double click cancels the auction
+      -- Shift-click hides the item, Alt-click marks one more (or unmarks),
+      -- a double click cancels the auction
       if IsShiftKeyDown() then
         self:HideItem(rowData)
+        return
+      end
+      if IsAltKeyDown() then
+        self:ToggleMark(rowData)
         return
       end
       local now = GetTime()
@@ -140,31 +149,42 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
         return
       end
       self.selectedKey = rowData.key
+      self.marked = { [rowData.key] = true }
       self:UpdateButtons()
-      self.ResultsListing:Refresh()
+      self.rowTable:Refresh()
+    end,
+    onRowEnter = function(rowData)
+      if IsAltKeyDown() and not self.marked[rowData.key] then
+        self:ToggleMark(rowData)
+      end
     end,
     isRowSelected = function(rowData)
-      return rowData.key == self.selectedKey
+      return self.marked[rowData.key] == true
     end,
     emptyText = "You have no auctions.",
   })
-  self.ResultsListing:SetPoint("TOPLEFT", self, "TOPLEFT", 26, -82)
-  self.ResultsListing:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -14, 72)
+  self.rowTable:SetPoint("TOPLEFT", self, "TOPLEFT", 26, -82)
+  self.rowTable:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -14, 72)
 
-  self.CancelButton = CreateFrame("Button", "AuctionaryCancellingCancelButton", self, "UIPanelButtonTemplate")
-  self.CancelButton:SetWidth(140)
+  self.CancelButton = CreateFrame("Button", "Auctionary2CancellingCancelButton", self, "UIPanelButtonTemplate")
+  self.CancelButton:SetWidth(130)
   self.CancelButton:SetHeight(22)
   self.CancelButton:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -16, 46)
   self.CancelButton:SetText("Cancel Selected")
   self.CancelButton:SetScript("OnClick", function()
-    local row = self:GetSelectedRow()
-    if row ~= nil and not self:CancelRow(row) then
-      self.BottomStatus:SetText(row.name .. " was already sold, cancelled or expired - removed from the list.")
+    local marked = self:GetMarkedRows()
+    if #marked == 1 then
+      if not self:CancelRow(marked[1]) then
+        self.BottomStatus:SetText(marked[1].name .. " was already sold, cancelled or expired - removed from the list.")
+      end
+    elseif #marked > 1 then
+      local cancelled = self:CancelRows(marked)
+      self.BottomStatus:SetText("Cancelled " .. cancelled .. " of " .. #marked .. " selected auctions.")
     end
   end)
 
-  self.CancelNextButton = CreateFrame("Button", "AuctionaryCancellingCancelNextButton", self, "UIPanelButtonTemplate")
-  self.CancelNextButton:SetWidth(170)
+  self.CancelNextButton = CreateFrame("Button", "Auctionary2CancellingCancelNextButton", self, "UIPanelButtonTemplate")
+  self.CancelNextButton:SetWidth(150)
   self.CancelNextButton:SetHeight(22)
   self.CancelNextButton:SetPoint("RIGHT", self.CancelButton, "LEFT", -6, 0)
   self.CancelNextButton:SetText("Cancel Next Undercut")
@@ -181,8 +201,8 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
 
   -- Cancels every auction marked as undercut. The first click only asks, the second
   -- one (within five seconds) does it.
-  self.CancelAllButton = CreateFrame("Button", "AuctionaryCancellingCancelAllButton", self, "UIPanelButtonTemplate")
-  self.CancelAllButton:SetWidth(150)
+  self.CancelAllButton = CreateFrame("Button", "Auctionary2CancellingCancelAllButton", self, "UIPanelButtonTemplate")
+  self.CancelAllButton:SetWidth(140)
   self.CancelAllButton:SetHeight(22)
   self.CancelAllButton:SetPoint("RIGHT", self.CancelNextButton, "LEFT", -6, 0)
   self.CancelAllButton:SetText("Cancel All Undercut")
@@ -201,9 +221,40 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
     end
   end)
 
+  -- Every auction of the selected item (e.g. all Arcane Dust), undercut or
+  -- not. More than one needs a second click within five seconds.
+  self.CancelItemButton = CreateFrame("Button", "Auctionary2CancellingCancelItemButton", self, "UIPanelButtonTemplate")
+  self.CancelItemButton:SetWidth(130)
+  self.CancelItemButton:SetHeight(22)
+  self.CancelItemButton:SetPoint("RIGHT", self.CancelAllButton, "LEFT", -6, 0)
+  self.CancelItemButton:SetText("Cancel All of Item")
+  self.CancelItemButton:SetScript("OnClick", function()
+    local selected = self:GetSelectedRow()
+    local rows = self:GetItemRows(selected)
+    if #rows == 0 then
+      self.BottomStatus:SetText("Select an auction of the item first.")
+      return
+    end
+    local armedFor = selected.itemKey
+    if #rows > 1 and not (self.cancelItemArmed == armedFor and GetTime() - (self.cancelItemTime or 0) <= 5) then
+      self.cancelItemArmed, self.cancelItemTime = armedFor, GetTime()
+      self.BottomStatus:SetText("|cffff2020Click again to cancel all " .. #rows .. " auctions of " .. selected.name .. ".|r")
+      return
+    end
+    self.cancelItemArmed = nil
+    local cancelled = self:CancelRows(rows)
+    self.BottomStatus:SetText("Cancelled " .. cancelled .. " auctions of " .. selected.name .. ".")
+  end)
+  self.CancelItemButton:SetScript("OnEnter", function(button)
+    GameTooltip:SetOwner(button, "ANCHOR_TOP")
+    GameTooltip:SetText("Cancels every auction of the selected item, undercut or not.", 1, 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  self.CancelItemButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
   self.BottomStatus = self:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   self.BottomStatus:SetPoint("LEFT", self, "BOTTOMLEFT", 30, 57)
-  self.BottomStatus:SetPoint("RIGHT", self.CancelAllButton, "LEFT", -8, 0)
+  self.BottomStatus:SetPoint("RIGHT", self.CancelItemButton, "LEFT", -8, 0)
   self.BottomStatus:SetJustifyH("LEFT")
 
   Auctionary.EventBus:Register(self, {
@@ -224,7 +275,7 @@ function AuctionaryCancellingTabFrameMixin:OnLoad()
   end)
 end
 
-function AuctionaryCancellingTabFrameMixin:SetStatus(text)
+function CancellingTab:SetStatus(text)
   self.Status:SetText(text or "")
 end
 
@@ -248,7 +299,7 @@ local function StatusFor(row, market)
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:BuildRows(auctions)
+function CancellingTab:BuildRows(auctions)
   local rows = {}
   local seen = {}
   for _, auction in ipairs(auctions) do
@@ -281,7 +332,7 @@ function AuctionaryCancellingTabFrameMixin:BuildRows(auctions)
   return rows
 end
 
-function AuctionaryCancellingTabFrameMixin:UpdateTotal()
+function CancellingTab:UpdateTotal()
   local total, count = 0, 0
   for _, row in ipairs(self.rows or {}) do
     if not row.isSold and (row.stackPrice or 0) > 0 then
@@ -293,7 +344,7 @@ function AuctionaryCancellingTabFrameMixin:UpdateTotal()
     .. "  |cff909090(" .. count .. ")|r")
 end
 
-function AuctionaryCancellingTabFrameMixin:ApplyMarket()
+function CancellingTab:ApplyMarket()
   pcall(self.UpdateTotal, self)
   local undercut = 0
   for _, row in ipairs(self.rows) do
@@ -330,7 +381,7 @@ function AuctionaryCancellingTabFrameMixin:ApplyMarket()
       table.insert(visible, row)
     end
   end
-  self.DataProvider:SetEntries(visible)
+  self.rowSet:Replace(visible)
   if hiddenCount > 0 then
     self.ShowHiddenButton:SetText("Show Hidden (" .. hiddenCount .. ")")
     self.ShowHiddenButton:Show()
@@ -341,16 +392,25 @@ function AuctionaryCancellingTabFrameMixin:ApplyMarket()
   if selected ~= nil and selected.hidden then
     self.selectedKey = nil
   end
+  local present = {}
+  for _, row in ipairs(visible) do
+    present[row.key] = true
+  end
+  for key in pairs(self.marked) do
+    if not present[key] then
+      self.marked[key] = nil
+    end
+  end
   self:UpdateButtons()
 end
 
-function AuctionaryCancellingTabFrameMixin:HideItem(row)
+function CancellingTab:HideItem(row)
   self.hiddenItems[row.itemKey] = true
   self.BottomStatus:SetText(row.name .. " is hidden. \"Show Hidden\" at the top right brings it back.")
   self:ApplyMarket()
 end
 
-function AuctionaryCancellingTabFrameMixin:GetSelectedRow()
+function CancellingTab:GetSelectedRow()
   for _, row in ipairs(self.rows) do
     if row.key == self.selectedKey then
       return row
@@ -358,7 +418,46 @@ function AuctionaryCancellingTabFrameMixin:GetSelectedRow()
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:GetNextUndercut()
+function CancellingTab:ToggleMark(row)
+  if self.marked[row.key] then
+    self.marked[row.key] = nil
+    if self.selectedKey == row.key then
+      self.selectedKey = next(self.marked)
+    end
+  else
+    self.marked[row.key] = true
+    self.selectedKey = row.key
+  end
+  self:UpdateButtons()
+  self.rowTable:Refresh()
+end
+
+-- Marked rows that can still be cancelled
+function CancellingTab:GetMarkedRows()
+  local rows = {}
+  for _, row in ipairs(self.rows) do
+    if self.marked[row.key] and not row.isSold and not row.hidden then
+      rows[#rows + 1] = row
+    end
+  end
+  return rows
+end
+
+-- Every auction of the same item as `row` that can still be cancelled
+function CancellingTab:GetItemRows(row)
+  local rows = {}
+  if row == nil then
+    return rows
+  end
+  for _, other in ipairs(self.rows) do
+    if other.itemKey == row.itemKey and not other.isSold then
+      rows[#rows + 1] = other
+    end
+  end
+  return rows
+end
+
+function CancellingTab:GetNextUndercut()
   for _, row in ipairs(self.rows) do
     if row.status == 1 and not row.isSold and not row.hidden then
       return row
@@ -366,12 +465,18 @@ function AuctionaryCancellingTabFrameMixin:GetNextUndercut()
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:UpdateButtons()
-  local selected = self:GetSelectedRow()
-  if selected ~= nil and not selected.isSold then
+function CancellingTab:UpdateButtons()
+  local marked = #self:GetMarkedRows()
+  self.CancelButton:SetText(marked > 1 and ("Cancel Selected (" .. marked .. ")") or "Cancel Selected")
+  if marked > 0 then
     self.CancelButton:Enable()
   else
     self.CancelButton:Disable()
+  end
+  if #self:GetItemRows(self:GetSelectedRow()) > 0 then
+    self.CancelItemButton:Enable()
+  else
+    self.CancelItemButton:Disable()
   end
   if self:CountCancellable() > 0 then
     self.CancelAllButton:Enable()
@@ -387,7 +492,7 @@ end
 
 ---- Undercut scan: one exact search per different item
 
-function AuctionaryCancellingTabFrameMixin:StartScan()
+function CancellingTab:StartScan()
   local queue, queued = {}, {}
   for _, row in ipairs(self.rows) do
     if not row.isSold and row.stackPrice > 0 and not queued[row.name] then
@@ -421,11 +526,11 @@ function AuctionaryCancellingTabFrameMixin:StartScan()
       self.ownByName[row.name] = own
     end
   end
-  self.ScanButton:SetText(AUCTIONARY_L_CANCEL or CANCEL)
+  self.ScanButton:SetText(AUCTIONARY2_L_CANCEL or CANCEL)
   self:NextItem()
 end
 
-function AuctionaryCancellingTabFrameMixin:NextItem()
+function CancellingTab:NextItem()
   self.scanPosition = self.scanPosition + 1
   local name = self.scanQueue[self.scanPosition]
   if name == nil then
@@ -438,7 +543,7 @@ function AuctionaryCancellingTabFrameMixin:NextItem()
   Auctionary.AH.QueryAuctionItems({ searchString = name, isExact = true })
 end
 
-function AuctionaryCancellingTabFrameMixin:StopScan()
+function CancellingTab:StopScan()
   if self.scanning then
     self.scanning = false
     Auctionary.AH.AbortQuery()
@@ -446,7 +551,7 @@ function AuctionaryCancellingTabFrameMixin:StopScan()
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:FinishScan(completed)
+function CancellingTab:FinishScan(completed)
   self.scanning = false
   self.ScanButton:SetText("Scan for Undercuts")
   self:ApplyMarket()
@@ -459,7 +564,7 @@ end
 
 -- Enough cheaper auctions of others seen already? (5, or fewer when fewer
 -- own auctions of the item are up)
-function AuctionaryCancellingTabFrameMixin:EnoughUndercuts()
+function CancellingTab:EnoughUndercuts()
   local own = self.ownByName and self.ownByName[self.scanName]
   if own == nil or own.lowest == nil then
     return false
@@ -484,7 +589,7 @@ end
 
 -- Lowest price per item among the auctions that are not the player's
 -- (partial: not all pages were read, so nothing goes into the price database)
-function AuctionaryCancellingTabFrameMixin:RecordMarket(auctions, partial)
+function CancellingTab:RecordMarket(auctions, partial)
   local lowestAny, totals = {}, {}
   for _, auction in ipairs(auctions) do
     local info = auction.info
@@ -528,7 +633,7 @@ function AuctionaryCancellingTabFrameMixin:RecordMarket(auctions, partial)
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotAllResults)
+function CancellingTab:ReceiveEvent(eventName, results, gotAllResults)
   if eventName == Auctionary.AH.Events.OwnedAuctionsUpdate then
     if self:IsVisible() then
       self.rows = self:BuildRows(results)
@@ -537,7 +642,7 @@ function AuctionaryCancellingTabFrameMixin:ReceiveEvent(eventName, results, gotA
       end
       self:ApplyMarket()
       if not self.scanning and self.cancelMessage == nil then
-        self:SetStatus(#self.rows .. " auctions. Shift-click hides an item."
+        self:SetStatus(#self.rows .. " auctions. Alt + click or Alt + mouseover selects more. Shift-click hides an item."
           .. (Auctionary.Config.Get(Auctionary.Config.Options.DOUBLE_CLICK_ACTIONS) and " Double-click cancels one." or ""))
       end
       self.cancelMessage = nil
@@ -604,7 +709,7 @@ local function FindOwnIndex(row)
   end
 end
 
-function AuctionaryCancellingTabFrameMixin:RemoveRow(row)
+function CancellingTab:RemoveRow(row)
   for index, other in ipairs(self.rows) do
     if other == row then
       table.remove(self.rows, index)
@@ -617,13 +722,14 @@ function AuctionaryCancellingTabFrameMixin:RemoveRow(row)
 end
 
 -- Returns true when the cancel request was sent
-function AuctionaryCancellingTabFrameMixin:CancelRow(row)
+function CancellingTab:CancelRow(row)
   if row.isSold then
     return false
   end
   local index = FindOwnIndex(row)
   -- Either way the row is done with: cancelled now, or already gone
   self:RemoveRow(row)
+  self.marked[row.key] = nil
   if index ~= nil then
     CancelAuction(index)
     self.cancelMessage = true
@@ -631,6 +737,7 @@ function AuctionaryCancellingTabFrameMixin:CancelRow(row)
       .. (row.hasBid and "  (it had a bid: the auction house keeps a fee)" or ""))
   end
   self:ApplyMarket()
+  self:SkipCancelledItems()
   -- The server sends the new list; ask again in case it does not
   Auctionary.Compat.After(1.5, function()
     if self:IsVisible() then
@@ -644,7 +751,7 @@ local function IsUndercutRow(row)
   return row.status == 1 and not row.isSold and not row.hidden
 end
 
-function AuctionaryCancellingTabFrameMixin:CountCancellable()
+function CancellingTab:CountCancellable()
   local count = 0
   for _, row in ipairs(self.rows or {}) do
     if IsUndercutRow(row) then
@@ -654,18 +761,27 @@ function AuctionaryCancellingTabFrameMixin:CountCancellable()
   return count
 end
 
--- Cancels every auction marked as undercut. Runs inside one click. The
--- client's list only changes once the server answers, so the positions stay
--- valid; going from the end is the safe order.
-function AuctionaryCancellingTabFrameMixin:CancelAll()
+-- Cancels the given rows' auctions, all inside one click. The client's
+-- list only changes once the server answers, so the positions stay valid;
+-- going from the end is the safe order. Returns how many were cancelled.
+function CancellingTab:CancelRows(rows)
   -- How many auctions of each kind (item, stack size, buyout) are wanted
-  local wanted = {}
-  for index = #self.rows, 1, -1 do
-    local row = self.rows[index]
-    if IsUndercutRow(row) then
+  local wanted, chosen = {}, {}
+  for _, row in ipairs(rows) do
+    if not row.isSold then
       local token = row.itemLink .. "|" .. row.stackSize .. "|" .. row.stackPrice
       wanted[token] = (wanted[token] or 0) + 1
+      chosen[row] = true
+    end
+  end
+  for index = #self.rows, 1, -1 do
+    local row = self.rows[index]
+    if chosen[row] then
       table.remove(self.rows, index)
+      self.marked[row.key] = nil
+      if self.selectedKey == row.key then
+        self.selectedKey = nil
+      end
     end
   end
   local cancelled = 0
@@ -681,21 +797,59 @@ function AuctionaryCancellingTabFrameMixin:CancelAll()
       end
     end
   end
-  self.selectedKey = nil
   self.cancelMessage = true
-  self.BottomStatus:SetText("Cancelled " .. cancelled .. " undercut auctions.")
   self:ApplyMarket()
+  self:SkipCancelledItems()
   Auctionary.Compat.After(1.5, function()
     if self:IsVisible() then
       Auctionary.AH.QueryOwnedAuctions()
     end
   end)
+  return cancelled
+end
+
+-- Cancels every auction marked as undercut
+function CancellingTab:CancelAll()
+  local rows = {}
+  for _, row in ipairs(self.rows) do
+    if IsUndercutRow(row) then
+      rows[#rows + 1] = row
+    end
+  end
+  local cancelled = self:CancelRows(rows)
+  self.BottomStatus:SetText("Cancelled " .. cancelled .. " undercut auctions.")
+end
+
+-- Cancelling works while the undercut scan runs. Items with nothing left to
+-- cancel are not searched any more; the one being searched right now is
+-- left at once.
+function CancellingTab:SkipCancelledItems()
+  if not self.scanning then
+    return
+  end
+  local left = {}
+  for _, row in ipairs(self.rows) do
+    if not row.isSold and row.stackPrice > 0 then
+      left[row.name] = true
+    end
+  end
+  for index = #self.scanQueue, self.scanPosition + 1, -1 do
+    if not left[self.scanQueue[index]] then
+      table.remove(self.scanQueue, index)
+    end
+  end
+  if not left[self.scanName] then
+    self.ignoreAbort = true
+    Auctionary.AH.AbortQuery()
+    self.ignoreAbort = false
+    self:NextItem()
+  end
 end
 
 Auctionary.Tabs.RegisterContent("Cancelling", function(panel)
-  local frame = CreateFrame("Frame", "AuctionaryCancellingTabFrame", panel)
+  local frame = CreateFrame("Frame", "Auctionary2CancellingTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionary.Compat.Mixin(frame, AuctionaryCancellingTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, CancellingTab)
   frame:OnLoad()
   panel.Content = frame
 end)

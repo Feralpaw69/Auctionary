@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Price history of one item is kept as one printable string in the saved
 -- variables (the original uses binary CBOR, which is not safe to store with

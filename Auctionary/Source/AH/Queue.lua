@@ -1,37 +1,42 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
-Auctionary.AH.QueueMixin = {}
+---- Waiting line for auction house requests
+-- The server only takes a new request every so often. Requests are run
+-- right away when allowed, otherwise in order as soon as the throttle says
+-- the auction house is ready again.
 
-function Auctionary.AH.QueueMixin:Init()
+local Queue = {}
+Auctionary.AH.QueueMixin = Queue
+
+function Queue:Init()
   self.queue = {}
-  Auctionary.EventBus:Register(self, {
-    Auctionary.AH.Events.Ready
-  })
+  Auctionary.EventBus:Register(self, { Auctionary.AH.Events.Ready })
 end
 
-local function Dequeue(self)
-  if #self.queue > 0 then
+local function RunNext(self)
+  local request = table.remove(self.queue, 1)
+  if request ~= nil then
     Auctionary.AH.Internals.throttling:SearchQueried()
-    self.queue[1]()
-    table.remove(self.queue, 1)
+    request()
   end
 end
 
-function Auctionary.AH.QueueMixin:Enqueue(func)
-  table.insert(self.queue, func)
-
+function Queue:Enqueue(request)
+  self.queue[#self.queue + 1] = request
   if Auctionary.AH.Internals.throttling:IsReady() then
-    Dequeue(self)
+    RunNext(self)
   end
 end
 
-function Auctionary.AH.QueueMixin:Remove(func)
-  local index = Auctionary.Compat.tIndexOf(self.queue, func)
-  if index ~= nil then
-    table.remove(self.queue, index)
+function Queue:Remove(request)
+  for index = #self.queue, 1, -1 do
+    if self.queue[index] == request then
+      table.remove(self.queue, index)
+    end
   end
 end
 
-function Auctionary.AH.QueueMixin:ReceiveEvent(event)
-  Dequeue(self)
+function Queue:ReceiveEvent()
+  RunNext(self)
 end

@@ -1,48 +1,17 @@
--- Global namespace of the addon.
-Auctionary = {
-  Debug = {},
-  Constants = {},
-  Utilities = {},
-  Events = {},
-  SlashCmd = {},
-
-  State = {
-    Loaded = false,
-    CurrentVersion = nil,
-  },
-
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+-- Everything of the addon lives in this one global table
+Auctionary2 = {
+  State = { Loaded = false },
   SavedState = {},
-  Search = {
-    CategoryLookup = {},
-    Filters = {},
-  },
-  Tooltip = {},
-  Locales = {},
-  Config = {},
-  Variables = {},
-  Shopping = { Tab = {}, Lists = {} },
-  Cancelling = {},
-  Enchant = {},
-  Mill = {},
-  Prospect = {},
-  Selling = {},
-  Buying = {},
-  Components = {},
-  CraftingInfo = {},
-  IncrementalScan = {},
-  FullScan = {},
-  PostingHistory = {},
-  Groups = {},
-
-  Tabs = {
-    State = {
-      knownTabs= {}
-    },
-  },
-
-  API = {
-    v1 = {}
-  },
-
-  AH = {}
+  Tabs = {},
+  API = { v1 = {} },
+  Shopping = { Lists = {} },
+  Search = { CategoryLookup = {} },
 }
+for _, part in ipairs({
+  "Debug", "Constants", "Utilities", "Commands", "Tooltip", "Locales", "Config",
+  "Variables", "Cancelling", "Enchant", "Mill", "Prospect", "Selling", "Buying",
+  "Components", "CraftingInfo", "FullScan", "AH", "Sniping",
+}) do
+  Auctionary2[part] = {}
+end

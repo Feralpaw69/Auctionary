@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- What a crafted item costs to make ("Mats Cost" in tooltips).
 --
@@ -8,15 +9,15 @@ local Auctionary = Auctionary
 -- as crafted item -> reagents in the saved variables. For everything else the
 -- recipe list shipped in Data/Recipes.lua is used.
 --
--- AUCTIONARY_RECIPES[craftedItemID][recipeSpellID] = {
+-- AUCTIONARY2_RECIPES[craftedItemID][recipeSpellID] = {
 --   made = number of items one craft makes,
 --   r = { [reagentItemID] = count, ... },
 -- }
 local RECIPES_DB_VERSION = 1
 
 function Auctionary.CraftingInfo.InitializeRecipes()
-  if AUCTIONARY_RECIPES == nil or AUCTIONARY_RECIPES["__dbversion"] ~= RECIPES_DB_VERSION then
-    AUCTIONARY_RECIPES = { ["__dbversion"] = RECIPES_DB_VERSION }
+  if AUCTIONARY2_RECIPES == nil or AUCTIONARY2_RECIPES["__dbversion"] ~= RECIPES_DB_VERSION then
+    AUCTIONARY2_RECIPES = { ["__dbversion"] = RECIPES_DB_VERSION }
   end
 end
 
@@ -29,7 +30,7 @@ end
 
 -- Reads the profession window that is open right now
 function Auctionary.CraftingInfo.ScanTradeSkill()
-  if AUCTIONARY_RECIPES == nil then
+  if AUCTIONARY2_RECIPES == nil then
     return
   end
 
@@ -58,10 +59,10 @@ function Auctionary.CraftingInfo.ScanTradeSkill()
         end
 
         if complete and next(recipe.r) ~= nil then
-          local forItem = AUCTIONARY_RECIPES[itemID]
+          local forItem = AUCTIONARY2_RECIPES[itemID]
           if forItem == nil then
             forItem = {}
-            AUCTIONARY_RECIPES[itemID] = forItem
+            AUCTIONARY2_RECIPES[itemID] = forItem
           end
           if forItem[recipeID] == nil then
             learned = learned + 1
@@ -80,7 +81,7 @@ end
 -- Price of one reagent: what a vendor sells it for if a vendor was seen
 -- selling it (vials, thread, ...), else the last auction price. nil if unknown.
 function Auctionary.CraftingInfo.GetReagentPrice(reagentID)
-  local vendorPrice = AUCTIONARY_VENDOR_PRICE_CACHE and AUCTIONARY_VENDOR_PRICE_CACHE[reagentID]
+  local vendorPrice = AUCTIONARY2_VENDOR_PRICE_CACHE and AUCTIONARY2_VENDOR_PRICE_CACHE[reagentID]
   if vendorPrice ~= nil then
     return vendorPrice
   end
@@ -157,7 +158,7 @@ local SMALL_DECKS = { Rogues = 3, Swords = 4, Mages = 5, Demons = 6 }
 function Auctionary.CraftingInfo.NoteItemName(name, itemLink)
   -- Every name seen is also kept for the search's spelling help
   Auctionary.Search.NoteItemName(name, itemLink and itemLink:match("|Hitem:(%d+)"))
-  if name == nil or AUCTIONARY_RECIPES == nil then
+  if name == nil or AUCTIONARY2_RECIPES == nil then
     return
   end
   local rankName, suit = name:match("^(%a+) of (.+)$")
@@ -169,10 +170,10 @@ function Auctionary.CraftingInfo.NoteItemName(name, itemLink)
   if itemID == nil then
     return
   end
-  local cards = AUCTIONARY_RECIPES["__cards"]
+  local cards = AUCTIONARY2_RECIPES["__cards"]
   if cards == nil then
     cards = {}
-    AUCTIONARY_RECIPES["__cards"] = cards
+    AUCTIONARY2_RECIPES["__cards"] = cards
   end
   cards[suit] = cards[suit] or {}
   cards[suit][rank] = itemID
@@ -181,7 +182,7 @@ end
 local function GetDeckCost(itemID)
   local name = GetItemInfo(itemID)
   local suit = name and name:match("^(.+) Deck$")
-  local cards = suit and AUCTIONARY_RECIPES["__cards"] and AUCTIONARY_RECIPES["__cards"][suit]
+  local cards = suit and AUCTIONARY2_RECIPES["__cards"] and AUCTIONARY2_RECIPES["__cards"][suit]
   if cards == nil then
     return nil
   end
@@ -207,7 +208,7 @@ function Auctionary.CraftingInfo.GetMatsCost(itemID)
   itemID = tostring(itemID)
   -- What was read from a profession window on this server is trusted over
   -- the shipped list
-  local forItem = AUCTIONARY_RECIPES and AUCTIONARY_RECIPES[itemID]
+  local forItem = AUCTIONARY2_RECIPES and AUCTIONARY2_RECIPES[itemID]
   if type(forItem) ~= "table" then
     forItem = GetStaticRecipes(itemID)
   end
@@ -220,7 +221,7 @@ function Auctionary.CraftingInfo.GetMatsCost(itemID)
       local cost, missing = Auctionary.CraftingInfo.GetMatsCost(NORTH_CARD_ID)
       return cost, missing, "3% chance"
     end
-    if AUCTIONARY_RECIPES ~= nil then
+    if AUCTIONARY2_RECIPES ~= nil then
       return GetDeckCost(itemID)
     end
     return nil
@@ -256,7 +257,7 @@ end
 
 ---- Learning
 
-local frame = CreateFrame("Frame", "AuctionaryRecipesFrame")
+local frame = CreateFrame("Frame", "Auctionary2RecipesFrame")
 frame:RegisterEvent("TRADE_SKILL_SHOW")
 frame:RegisterEvent("TRADE_SKILL_UPDATE")
 frame:RegisterEvent("MERCHANT_SHOW")
@@ -266,7 +267,7 @@ local scanPending = false
 
 -- Prices of what vendors sell in unlimited supply for gold
 local function ScanMerchant()
-  if AUCTIONARY_VENDOR_PRICE_CACHE == nil then
+  if AUCTIONARY2_VENDOR_PRICE_CACHE == nil then
     return
   end
   for index = 1, GetMerchantNumItems() do
@@ -274,7 +275,7 @@ local function ScanMerchant()
     local itemID = IDFromLink(GetMerchantItemLink(index), "item")
     if itemID ~= nil and price ~= nil and price > 0 and numAvailable == -1 and
        not extendedCost and quantity ~= nil and quantity > 0 then
-      AUCTIONARY_VENDOR_PRICE_CACHE[itemID] = math.ceil(price / quantity)
+      AUCTIONARY2_VENDOR_PRICE_CACHE[itemID] = math.ceil(price / quantity)
     end
   end
 end

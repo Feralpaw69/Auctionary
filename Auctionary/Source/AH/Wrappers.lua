@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 
@@ -154,7 +155,7 @@ function Auctionary.AH.PostAuction(startingBid, buyoutPrice, duration, stackSize
   )
 end
 
--- Event ThrottleUpdate will fire whenever the state changes
+-- True when a request may be sent now (AH.Events.Ready says when it becomes true)
 function Auctionary.AH.IsNotThrottled()
   return Auctionary.AH.Internals ~= nil and Auctionary.AH.Internals.throttling:IsReady()
 end

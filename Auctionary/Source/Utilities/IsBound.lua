@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- GetItemInfo has no bind type in 3.3.5, so the item's tooltip is read with a
 -- hidden tooltip instead. Results are cached per item ID.

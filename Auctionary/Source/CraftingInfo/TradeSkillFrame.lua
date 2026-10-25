@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Cost and profit of the selected recipe, shown in the profession window
 -- below the reagents. The numbers come straight from the open window, so
@@ -99,11 +100,11 @@ end
 ---- List of all recipes of the open profession, sorted by profit
 
 local PROFIT_LAYOUT = {
-  { headerText = "Recipe", headerParameters = { "name" }, cellParameters = { "nameText" } },
-  { headerText = "Mats Cost", headerParameters = { "cost" }, cellParameters = { "costText" }, width = 110 },
-  { headerText = "Auction", headerParameters = { "auction" }, cellParameters = { "auctionText" }, width = 110 },
-  { headerText = "Profit", headerParameters = { "profit" }, cellParameters = { "profitText" }, width = 110 },
-  { headerText = "", cellParameters = { "hideText" }, width = 26 },
+  { title = "Recipe", sort = "name", field = "nameText" },
+  { title = "Mats Cost", sort = "cost", field = "costText", width = 110 },
+  { title = "Auction", sort = "auction", field = "auctionText", width = 110 },
+  { title = "Profit", sort = "profit", field = "profitText", width = 110 },
+  { title = "", field = "hideText", width = 26 },
 }
 local HIDE_ICON = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:14:14:0:0|t"
 
@@ -125,12 +126,12 @@ local profitDialog
 local function ShowProfitList()
   if profitDialog == nil then
     local number = Auctionary.Utilities.NumberComparator
-    profitDialog = Auctionary.Components.CreateDialog("AuctionaryfitDialog", 600, 420, "")
-    profitDialog.provider = Auctionary.Components.CreateDataProvider({
-      layout = PROFIT_LAYOUT,
-      comparators = { name = Auctionary.Utilities.StringComparator, cost = number, auction = number, profit = number },
+    profitDialog = Auctionary.Components.CreateDialog("Auctionary2ProfitDialog", 600, 420, "")
+    profitDialog.rowSet = Auctionary.Components.CreateRowSet({
+      columns = PROFIT_LAYOUT,
+      sorters = { name = Auctionary.Utilities.StringComparator, cost = number, auction = number, profit = number },
     })
-    profitDialog.listing = Auctionary.Components.CreateResultsListing(profitDialog, profitDialog.provider, {
+    profitDialog.rowTable = Auctionary.Components.CreateTable(profitDialog, profitDialog.rowSet, {
       emptyText = "No recipes with reagents in the list of the profession window.",
       onRowClick = function(rowData, _, row)
         -- The red x at the right end of the row hides the recipe
@@ -154,11 +155,11 @@ local function ShowProfitList()
         end
       end,
     })
-    profitDialog.listing:SetPoint("TOPLEFT", profitDialog, "TOPLEFT", 14, -36)
-    profitDialog.listing:SetPoint("BOTTOMRIGHT", profitDialog, "BOTTOMRIGHT", -14, 40)
+    profitDialog.rowTable:SetPoint("TOPLEFT", profitDialog, "TOPLEFT", 14, -36)
+    profitDialog.rowTable:SetPoint("BOTTOMRIGHT", profitDialog, "BOTTOMRIGHT", -14, 40)
     profitDialog.summary = profitDialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     profitDialog.summary:SetPoint("BOTTOMLEFT", profitDialog, "BOTTOMLEFT", 16, 18)
-    profitDialog.showHiddenButton = CreateFrame("Button", "AuctionaryfitShowHidden", profitDialog, "UIPanelButtonTemplate")
+    profitDialog.showHiddenButton = CreateFrame("Button", "Auctionary2ProfitShowHidden", profitDialog, "UIPanelButtonTemplate")
     profitDialog.showHiddenButton:SetWidth(110)
     profitDialog.showHiddenButton:SetHeight(22)
     profitDialog.showHiddenButton:SetPoint("RIGHT", profitDialog.closeButton, "LEFT", -6, 0)
@@ -216,10 +217,10 @@ local function ShowProfitList()
   end
   dialog:Show()
   -- Filled after the list is visible (see the history window)
-  dialog.provider:SetEntries(entries)
+  dialog.rowSet:Replace(entries)
   Auctionary.Compat.After(0.05, function()
-    if dialog.listing:IsVisible() then
-      dialog.listing:Refresh()
+    if dialog.rowTable:IsVisible() then
+      dialog.rowTable:Refresh()
     end
   end)
 end
@@ -257,7 +258,7 @@ local function Setup()
   text:Hide()
 
   -- Just below the window, so it cannot cover anything in it
-  local button = CreateFrame("Button", "AuctionaryfitListButton", TradeSkillFrame, "UIPanelButtonTemplate")
+  local button = CreateFrame("Button", "Auctionary2ProfitListButton", TradeSkillFrame, "UIPanelButtonTemplate")
   button:SetWidth(90)
   button:SetHeight(20)
   button:SetPoint("TOPLEFT", TradeSkillFrame, "BOTTOMLEFT", 20, 74)
@@ -298,8 +299,8 @@ local function PlaceBesideAuctionHouse()
   end
   TradeSkillFrame:SetMovable(true)
   TradeSkillFrame:SetClampedToScreen(true)
-  if not TradeSkillFrame.auctionaryDrag then
-    TradeSkillFrame.auctionaryDrag = true
+  if not TradeSkillFrame.auctionary2Drag then
+    TradeSkillFrame.auctionary2Drag = true
     TradeSkillFrame:HookScript("OnHide", function()
       Auctionary.Compat.After(0, function()
         pcall(Auctionary.CraftingInfo.ReleaseStuckPanel)

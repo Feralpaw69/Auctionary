@@ -1,52 +1,35 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
-local currentLocale = {}
+---- Texts in the player's language
+-- English is the base; another language only replaces the texts it has.
+-- Every text is also put into a global AUCTIONARY2_L_<KEY>.
 
-local function FixMissingTranslations(incomplete, locale)
-  if locale == "enUS" then
-    return
-  end
-
-  local enUS = AUCTIONARY_LOCALES["enUS"]()
-  for key, val in pairs(enUS) do
-    if incomplete[key] == nil then
-      incomplete[key] = val
-    end
-  end
-end
-
-local function AddNewLines(full)
-  for key, val in pairs(full) do
-    full[key] = string.gsub(full[key], "\\n", "\n")
+local languages = AUCTIONARY2_LOCALES or {}
+local texts = languages.enUS and languages.enUS() or {}
+local own = GetLocale() ~= "enUS" and languages[GetLocale()]
+if own then
+  for key, value in pairs(own()) do
+    texts[key] = value
   end
 end
 
-if AUCTIONARY_LOCALES_OVERRIDE ~= nil then
-  currentLocale = AUCTIONARY_LOCALES_OVERRIDE()
-
-  FixMissingTranslations(currentLocale, "OVERRIDE")
-elseif AUCTIONARY_LOCALES[GetLocale()] ~= nil then
-  currentLocale = AUCTIONARY_LOCALES[GetLocale()]()
-
-  FixMissingTranslations(currentLocale, GetLocale())
-else
-  currentLocale = AUCTIONARY_LOCALES["enUS"]()
+for key, value in pairs(texts) do
+  value = value:gsub("\\n", "\n")
+  texts[key] = value
+  _G["AUCTIONARY2_L_" .. key] = value
 end
 
-AddNewLines(currentLocale)
-
--- Export constants into the global scope (for XML frames to use)
-for key, value in pairs(currentLocale) do
-  _G["AUCTIONARY_L_"..key] = value
-end
-
-function Auctionary.Locales.Apply(s, ...)
-  if currentLocale[s] ~= nil then
-    return string.format(currentLocale[s], ...)
-  else
-    error("Unknown/missing locale string '" .. s .. "'")
+function Auctionary.Locales.Apply(key, ...)
+  local text = texts[key]
+  if text == nil then
+    error("Missing text '" .. tostring(key) .. "'")
   end
+  if select("#", ...) > 0 then
+    return text:format(...)
+  end
+  return text
 end
 
--- The texts of all languages are not needed any more once this one is set up
-AUCTIONARY_LOCALES = nil
+-- The other languages are not needed any more
+AUCTIONARY2_LOCALES = nil

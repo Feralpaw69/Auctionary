@@ -1,142 +1,102 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
--- Adds the price lines to item tooltips. Every way the 3.3.5 client fills an
--- item tooltip is a method of the tooltip; each handler finds the item link
--- and the stack size for that method.
-local TooltipHandlers = {}
+---- Where item tooltips come from
+-- Every way the client fills an item tooltip is a method of the tooltip.
+-- For each of them: which item (link) and how many of it. After the client
+-- has filled the tooltip, the price lines are added.
 
-local function Show(tip, itemLink, itemCount)
-  if itemLink == nil then
-    local _
-    _, itemLink = tip:GetItem()
-  end
-  if itemLink ~= nil then
-    Auctionary.Tooltip.ShowTipWithPricing(tip, itemLink, itemCount or 1)
-  end
-end
+local function Second(_, value) return value end
+local function Third(_, _, value) return value end
+local function Fourth(_, _, _, value) return value end
 
--- Bags
-TooltipHandlers["SetBagItem"] = function(tip, bag, slot)
-  local _, itemCount = GetContainerItemInfo(bag, slot)
-  Show(tip, GetContainerItemLink(bag, slot), itemCount)
-end
-
--- Equipped items, bank slots and the bags themselves
-TooltipHandlers["SetInventoryItem"] = function(tip, unit, slot)
-  local itemCount = GetInventoryItemCount(unit, slot)
-  Show(tip, GetInventoryItemLink(unit, slot), itemCount)
-end
-
-TooltipHandlers["SetGuildBankItem"] = function(tip, tab, slot)
-  local _, itemCount = GetGuildBankItemInfo(tab, slot)
-  Show(tip, GetGuildBankItemLink(tab, slot), itemCount)
-end
-
--- Merchant
-TooltipHandlers["SetMerchantItem"] = function(tip, index)
-  local _, _, _, itemCount = GetMerchantItemInfo(index)
-  Show(tip, GetMerchantItemLink(index), itemCount)
-end
-
-TooltipHandlers["SetBuybackItem"] = function(tip, slotIndex)
-  local _, _, _, itemCount = GetBuybackItemInfo(slotIndex)
-  Show(tip, GetBuybackItemLink(slotIndex), itemCount)
-end
-
--- Auction house
-TooltipHandlers["SetAuctionItem"] = function(tip, view, index)
-  local _, _, itemCount = GetAuctionItemInfo(view, index)
-  Show(tip, GetAuctionItemLink(view, index), itemCount)
-end
-
-TooltipHandlers["SetAuctionSellItem"] = function(tip)
-  local _, _, itemCount = GetAuctionSellItemInfo()
-  Show(tip, nil, itemCount)
-end
-
--- Loot
-TooltipHandlers["SetLootItem"] = function(tip, slot)
-  if LootSlotIsItem(slot) then
-    local _, _, itemCount = GetLootSlotInfo(slot)
-    Show(tip, GetLootSlotLink(slot), itemCount)
-  end
-end
-
-TooltipHandlers["SetLootRollItem"] = function(tip, rollID)
-  local _, _, itemCount = GetLootRollItemInfo(rollID)
-  Show(tip, GetLootRollItemLink(rollID), itemCount)
-end
-
--- Quests
-TooltipHandlers["SetQuestItem"] = function(tip, itemType, index)
-  local _, _, itemCount = GetQuestItemInfo(itemType, index)
-  Show(tip, GetQuestItemLink(itemType, index), itemCount)
-end
-
-TooltipHandlers["SetQuestLogItem"] = function(tip, itemType, index)
-  local itemCount, _
-  if itemType == "choice" then
-    _, _, itemCount = GetQuestLogChoiceInfo(index)
-  else
-    _, _, itemCount = GetQuestLogRewardInfo(index)
-  end
-  Show(tip, GetQuestLogItemLink(itemType, index), itemCount)
-end
-
--- Mail
-TooltipHandlers["SetInboxItem"] = function(tip, index, attachIndex)
-  local _, _, itemCount = GetInboxItem(index, attachIndex or 1)
-  Show(tip, GetInboxItemLink(index, attachIndex or 1), itemCount)
-end
-
-TooltipHandlers["SetSendMailItem"] = function(tip, index)
-  local _, _, itemCount = GetSendMailItem(index)
-  Show(tip, nil, itemCount)
-end
-
--- Trade window
-TooltipHandlers["SetTradePlayerItem"] = function(tip, index)
-  local _, _, itemCount = GetTradePlayerItemInfo(index)
-  Show(tip, GetTradePlayerItemLink(index), itemCount)
-end
-
-TooltipHandlers["SetTradeTargetItem"] = function(tip, index)
-  local _, _, itemCount = GetTradeTargetItemInfo(index)
-  Show(tip, GetTradeTargetItemLink(index), itemCount)
-end
-
--- Professions
-TooltipHandlers["SetTradeSkillItem"] = function(tip, recipeIndex, reagentIndex)
-  if reagentIndex ~= nil then
-    local _, _, itemCount = GetTradeSkillReagentInfo(recipeIndex, reagentIndex)
-    Show(tip, GetTradeSkillReagentItemLink(recipeIndex, reagentIndex), itemCount)
-  else
-    Show(tip, GetTradeSkillItemLink(recipeIndex), (GetTradeSkillNumMade(recipeIndex)))
-  end
-end
-
--- Item links in chat and everything shown by other addons
-TooltipHandlers["SetHyperlink"] = function(tip, link)
-  if type(link) == "string" and string.find(link, "item:", 1, true) then
-    Show(tip, nil, 1)
-  end
-end
-
-local function Guarded(handler)
-  return function(...)
-    if Auctionary.State.Loaded then
-      local ok, message = pcall(handler, ...)
-      if not ok then
-        Auctionary.Debug.Message("tooltip handler failed", message)
-      end
+local sources = {
+  SetBagItem = function(bag, slot)
+    return GetContainerItemLink(bag, slot), Second(GetContainerItemInfo(bag, slot))
+  end,
+  SetInventoryItem = function(unit, slot)
+    return GetInventoryItemLink(unit, slot), GetInventoryItemCount(unit, slot)
+  end,
+  SetGuildBankItem = function(tab, slot)
+    return GetGuildBankItemLink(tab, slot), Second(GetGuildBankItemInfo(tab, slot))
+  end,
+  SetMerchantItem = function(index)
+    return GetMerchantItemLink(index), Fourth(GetMerchantItemInfo(index))
+  end,
+  SetBuybackItem = function(index)
+    return GetBuybackItemLink(index), Fourth(GetBuybackItemInfo(index))
+  end,
+  SetAuctionItem = function(view, index)
+    return GetAuctionItemLink(view, index), Third(GetAuctionItemInfo(view, index))
+  end,
+  SetAuctionSellItem = function()
+    return nil, Third(GetAuctionSellItemInfo())
+  end,
+  SetLootItem = function(slot)
+    if LootSlotIsItem(slot) then
+      return GetLootSlotLink(slot), Third(GetLootSlotInfo(slot))
     end
-  end
-end
+    return false
+  end,
+  SetLootRollItem = function(rollID)
+    return GetLootRollItemLink(rollID), Third(GetLootRollItemInfo(rollID))
+  end,
+  SetQuestItem = function(kind, index)
+    return GetQuestItemLink(kind, index), Third(GetQuestItemInfo(kind, index))
+  end,
+  SetQuestLogItem = function(kind, index)
+    local count = kind == "choice" and Third(GetQuestLogChoiceInfo(index)) or Third(GetQuestLogRewardInfo(index))
+    return GetQuestLogItemLink(kind, index), count
+  end,
+  SetInboxItem = function(index, attachment)
+    return GetInboxItemLink(index, attachment or 1), Third(GetInboxItem(index, attachment or 1))
+  end,
+  SetSendMailItem = function(index)
+    return nil, Third(GetSendMailItem(index))
+  end,
+  SetTradePlayerItem = function(index)
+    return GetTradePlayerItemLink(index), Third(GetTradePlayerItemInfo(index))
+  end,
+  SetTradeTargetItem = function(index)
+    return GetTradeTargetItemLink(index), Third(GetTradeTargetItemInfo(index))
+  end,
+  SetTradeSkillItem = function(recipe, reagent)
+    if reagent ~= nil then
+      return GetTradeSkillReagentItemLink(recipe, reagent), Third(GetTradeSkillReagentInfo(recipe, reagent))
+    end
+    return GetTradeSkillItemLink(recipe), (GetTradeSkillNumMade(recipe))
+  end,
+  -- Links in chat and whatever other addons show
+  SetHyperlink = function(link)
+    if type(link) == "string" and link:find("item:", 1, true) then
+      return nil, 1
+    end
+    return false
+  end,
+}
 
 for _, tooltip in ipairs({ GameTooltip, ItemRefTooltip }) do
-  for method, handler in pairs(TooltipHandlers) do
+  for method, source in pairs(sources) do
     if type(tooltip[method]) == "function" then
-      hooksecurefunc(tooltip, method, Guarded(handler))
+      hooksecurefunc(tooltip, method, function(self, ...)
+        if not Auctionary.State.Loaded then
+          return
+        end
+        local ok, message = pcall(function(...)
+          local itemLink, count = source(...)
+          if itemLink == false then
+            return
+          end
+          -- nil: the tooltip knows the item itself
+          itemLink = itemLink or select(2, self:GetItem())
+          if itemLink ~= nil then
+            Auctionary.Tooltip.ShowTipWithPricing(self, itemLink, count or 1)
+          end
+        end, ...)
+        if not ok then
+          Auctionary.Debug.Message("tooltip: " .. tostring(message))
+        end
+      end)
     end
   end
 end

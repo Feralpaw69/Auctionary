@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Item categories of the 3.3.5 auction house as used by extended searches.
 -- A category key is "Class", "Class/Subclass" or "Class/Subclass/Slot" using

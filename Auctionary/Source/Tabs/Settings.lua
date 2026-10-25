@@ -1,11 +1,12 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- The "Auctionary" tab: settings of the addon and a short status of the
 -- price database. Everything is saved the moment it is changed.
 local Options = Auctionary.Config.Options
-local NAME = "AuctionaryOptions"
+local NAME = "Auctionary2Options"
 
-AuctionaryOptionsTabFrameMixin = {}
+local OptionsTab = {}
 
 local LEFT_X, RIGHT_X = 40, 440
 local DURATIONS = { 12, 24, 48 }
@@ -24,7 +25,7 @@ local function Text(parent, text, x, y)
   return label
 end
 
-function AuctionaryOptionsTabFrameMixin:AddCheck(option, text, x, y)
+function OptionsTab:AddCheck(option, text, x, y)
   local check = CreateFrame("CheckButton", NAME .. "Check" .. option, self, "UICheckButtonTemplate")
   check:SetWidth(24)
   check:SetHeight(24)
@@ -42,7 +43,9 @@ function AuctionaryOptionsTabFrameMixin:AddCheck(option, text, x, y)
   return check
 end
 
-function AuctionaryOptionsTabFrameMixin:AddNumberBox(key, option, x, y, minimum, maximum)
+-- onDone: the value is only saved on Enter or leaving the box, then onDone runs
+-- (for settings where a half typed number would already do something)
+function OptionsTab:AddNumberBox(key, option, x, y, minimum, maximum, onDone)
   local box = CreateFrame("EditBox", NAME .. "Box" .. key, self, "InputBoxTemplate")
   box:SetWidth(36)
   box:SetHeight(20)
@@ -59,24 +62,34 @@ function AuctionaryOptionsTabFrameMixin:AddNumberBox(key, option, x, y, minimum,
     Auctionary.Config.Set(option, value)
   end
   box:SetScript("OnTextChanged", function(_, userInput)
-    if userInput then
+    if userInput and onDone == nil then
       save()
     end
   end)
-  local function done()
-    box:ClearFocus()
+  local function apply()
+    if onDone ~= nil then
+      local before = Auctionary.Config.Get(option)
+      save()
+      if Auctionary.Config.Get(option) ~= before then
+        onDone(Auctionary.Config.Get(option))
+      end
+    end
     box:SetText(tostring(Auctionary.Config.Get(option)))
   end
-  box:SetScript("OnEnterPressed", done)
-  box:SetScript("OnEscapePressed", done)
-  box:SetScript("OnEditFocusLost", function()
-    box:SetText(tostring(Auctionary.Config.Get(option)))
+  box:SetScript("OnEnterPressed", function()
+    box:ClearFocus()
   end)
+  box:SetScript("OnEscapePressed", function()
+    -- Escape keeps the saved value
+    box:SetText(tostring(Auctionary.Config.Get(option)))
+    box:ClearFocus()
+  end)
+  box:SetScript("OnEditFocusLost", apply)
   self.boxes[option] = box
   return box
 end
 
-function AuctionaryOptionsTabFrameMixin:AddRadio(key, x, y, text, onClick)
+function OptionsTab:AddRadio(key, x, y, text, onClick)
   local radio = CreateFrame("CheckButton", NAME .. "Radio" .. key, self, "UIRadioButtonTemplate")
   radio:SetPoint("TOPLEFT", self, "TOPLEFT", x, y)
   local label = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -89,7 +102,7 @@ function AuctionaryOptionsTabFrameMixin:AddRadio(key, x, y, text, onClick)
   return radio
 end
 
-function AuctionaryOptionsTabFrameMixin:OnLoad()
+function OptionsTab:OnLoad()
   self.checks = {}
   self.boxes = {}
   local SalesTypes = Auctionary.Config.SalesTypes
@@ -131,7 +144,7 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
     self.durationRadios[hours] = self:AddRadio("Duration" .. hours, LEFT_X + 140 + (index - 1) * 50, y + 2,
       tostring(hours), function()
         Auctionary.Config.Set(Options.AUCTION_DURATION, hours)
-        local selling = AuctionarySellingTabFrame
+        local selling = Auctionary2SellingTabFrame
         if selling ~= nil and selling.SetDuration ~= nil then
           selling:SetDuration(hours)
         end
@@ -182,6 +195,10 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
   Header(self, "Scanning", LEFT_X, y)
   y = y - 20
   self:AddCheck(Options.AUTOSCAN, "Run a full scan when the auction house opens", LEFT_X - 4, y)
+  y = y - 22
+  if Auctionary.Sniping.Available then
+    self:AddCheck(Options.SNIPING_AUTO_SWITCH, "Show the Sniping tab after that scan if it found something", LEFT_X - 4, y)
+  end
 
   ---- Status
   y = y - 24
@@ -195,6 +212,10 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
   self.supportText:SetPoint("TOPLEFT", self.statusText, "BOTTOMLEFT", 0, -8)
   self.supportText:SetText("If you want to support my projects, send gold to Banksty. <3")
   self.supportText:SetTextColor(1, 0.82, 0)
+
+  self.madeByText = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  self.madeByText:SetPoint("TOPLEFT", self.supportText, "BOTTOMLEFT", 0, -4)
+  self.madeByText:SetText("Made by " .. (GetAddOnMetadata("Auctionary", "Author") or "Feralpaw"))
 
   -- Picture in the top right corner of the dark area
   self.madeByIcon = self:CreateTexture(nil, "ARTWORK")
@@ -237,7 +258,8 @@ function AuctionaryOptionsTabFrameMixin:OnLoad()
   y = y - 19
   self:AddCheck(Options.CRAFTING_INFO_SHOW, "Show mats cost and profit in the profession window", RIGHT_X - 4, y)
   y = y - 19
-  self:AddCheck(Options.DOUBLE_CLICK_ACTIONS, "Double-click cancels an auction (Cancelling tab)", RIGHT_X - 4, y)
+  self:AddCheck(Options.DOUBLE_CLICK_ACTIONS, Auctionary.Sniping.Available
+    and "Double-click buys (Sniping) and cancels (Cancelling)" or "Double-click cancels an auction (Cancelling)", RIGHT_X - 4, y)
 
   self:CreateSecondPage()
 
@@ -266,7 +288,7 @@ local function Collect(frame)
   return set
 end
 
-function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
+function OptionsTab:CreateSecondPage()
   local firstPage = Collect(self)
 
   local y = -84
@@ -291,7 +313,7 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
   self:AddCheck(Options.SHOPPING_BUY_ON_ENTER, "Enter buys the selected auction (no extra question)", LEFT_X - 4, y)
 
   -- Only where the Sniping tab exists
-  if AuctionarySnipingTabFrameMixin ~= nil then
+  if Auctionary.Sniping.Available then
     y = y - 28
     Header(self, "Sniping", LEFT_X, y)
     y = y - 18
@@ -311,7 +333,7 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
   self:AddCheck(Options.GOLD_TRACKER_RECORD, "Record purchases, deposits and your gold", RIGHT_X - 4, ry)
   ry = ry - 19
   self:AddCheck(Options.GOLD_TRACKER_VENDOR, "Record sales to vendors", RIGHT_X - 4, ry)
-  if AuctionarySnipingTabFrameMixin ~= nil then
+  if Auctionary.Sniping.Available then
     ry = ry - 19
     self:AddCheck(Options.GOLD_TRACKER_SNIPING, "Show the Sniping results line", RIGHT_X - 4, ry)
   end
@@ -349,6 +371,36 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
     GameTooltip:Show()
   end)
   reset:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  -- Gold coin of the Selling tab
+  ry = ry - 40
+  Header(self, "Selling: gold coin", RIGHT_X, ry)
+  ry = ry - 20
+  Text(self, "Buys the cheapest auction at or below", RIGHT_X, ry)
+  self:AddNumberBox("BargainPercent", Options.SELLING_BARGAIN_PERCENT, RIGHT_X + 222, ry + 5, 1, 100)
+  Text(self, "% of the average", RIGHT_X + 264, ry)
+
+  ry = ry - 34
+  Header(self, "Selling: scam sell protection", RIGHT_X, ry)
+  ry = ry - 18
+  self:AddCheck(Options.SELLING_SCAM_PROTECTION, "Do not undercut suspiciously cheap auctions", RIGHT_X - 4, ry)
+  ry = ry - 24
+  Text(self, "Suspicious: below", RIGHT_X, ry)
+  self:AddNumberBox("ScamPercent", Options.SELLING_SCAM_PERCENT, RIGHT_X + 110, ry + 5, 1, 99)
+  Text(self, "% of the usual price", RIGHT_X + 152, ry)
+
+  -- Fewer days: less memory
+  ry = ry - 28
+  Header(self, "Price history", RIGHT_X, ry)
+  ry = ry - 18
+  Text(self, "Keep the prices of the last", RIGHT_X, ry)
+  self:AddNumberBox("HistoryDays", Options.PRICE_HISTORY_DAYS, RIGHT_X + 160, ry + 5, 7, 90, function(days)
+    if Auctionary.Database ~= nil and Auctionary.Database.StartPruning ~= nil then
+      Auctionary.Database:StartPruning()
+    end
+    Auctionary.Utilities.Message("Price history: the last " .. days .. " days are kept; older days are deleted.")
+  end)
+  Text(self, "days (less = less memory)", RIGHT_X + 202, ry)
 
   local secondPage = {}
   for object in pairs(Collect(self)) do
@@ -412,7 +464,7 @@ function AuctionaryOptionsTabFrameMixin:CreateSecondPage()
   ShowPage(false)
 end
 
-function AuctionaryOptionsTabFrameMixin:Refresh()
+function OptionsTab:Refresh()
   local SalesTypes = Auctionary.Config.SalesTypes
   for option, check in pairs(self.checks) do
     check:SetChecked(Auctionary.Config.Get(option) and true or false)
@@ -438,7 +490,7 @@ function AuctionaryOptionsTabFrameMixin:Refresh()
   self:RefreshStatus()
 end
 
-function AuctionaryOptionsTabFrameMixin:RefreshStatus()
+function OptionsTab:RefreshStatus()
   local lines = {}
   local version = GetAddOnMetadata("Auctionary", "Version")
   if version ~= nil then
@@ -459,9 +511,9 @@ function AuctionaryOptionsTabFrameMixin:RefreshStatus()
 end
 
 Auctionary.Tabs.RegisterContent("Auctionary", function(panel)
-  local frame = CreateFrame("Frame", "AuctionaryOptionsTabFrame", panel)
+  local frame = CreateFrame("Frame", "Auctionary2OptionsTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionary.Compat.Mixin(frame, AuctionaryOptionsTabFrameMixin)
+  Auctionary.Compat.Mixin(frame, OptionsTab)
   frame:OnLoad()
   panel.Content = frame
 end)

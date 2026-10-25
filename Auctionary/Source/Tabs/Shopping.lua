@@ -1,792 +1,651 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
--- The Shopping tab: search box, recent searches, results per item and the
--- list of auctions to buy from after picking a result.
-AuctionaryShoppingTabFrameMixin = {}
-
-local SHOPPING_LIST_TABLE_LAYOUT = {
-  {
-    headerText = AUCTIONARY_L_RESULTS_PRICE_COLUMN,
-    headerParameters = { "minPrice" }, cellParameters = { "minPrice" },
-    cellType = "price", width = 140, buyDot = true,
-  },
-  {
-    headerText = AUCTIONARY_L_RESULTS_NAME_COLUMN,
-    headerParameters = { "name" }, cellParameters = { "name" },
-    cellType = "item",
-  },
-  {
-    headerText = AUCTIONARY_L_ITEM_LEVEL,
-    headerParameters = { "itemLevel" }, cellParameters = { "itemLevel" },
-    width = 90,
-  },
-  {
-    headerText = AUCTIONARY_L_RESULTS_AVAILABLE_COLUMN,
-    headerParameters = { "totalQuantity" }, cellParameters = { "available" },
-    width = 80,
-  },
-}
-
-local SIDE_TABLE_LAYOUT = {
-  {
-    headerText = AUCTIONARY_L_RECENT_SEARCHES or "Recent Searches",
-    cellParameters = { "text" },
-  },
-}
-
-function AuctionaryShoppingTabFrameMixin:OnLoad()
-  Auctionary.EventBus:RegisterSource(self, "AuctionaryShoppingTabFrameMixin")
-
-  self:CreateSearchOptions()
-  self:CreateSidePanel()
-  self:CreateResults()
-
-  self.BuyFrame = Auctionary.Buying.CreateFrame(self)
-  self.BuyFrame:SetPoint("TOPLEFT", self.ResultsListing, "TOPLEFT", 0, 0)
-  self.BuyFrame:SetPoint("BOTTOMRIGHT", self.ResultsListing, "BOTTOMRIGHT", 0, 0)
-  self.BuyFrame.onClose = function()
-    self.ResultsListing:Show()
-    -- Quantities changed if something was bought
-    self:RefreshResults()
-  end
-
-  self.SearchProvider = Auctionary.Search.CreateLegacySearchProvider()
-  self.SearchProvider:InitSearch(
-    function(results)
-      local wasRunning = self.searchRunning
-      self.searchRunning = false
-      self:SetStatus("")
-      Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchEnd, results)
-      if self.correctionNote ~= nil then
-        self:SetStatus(self.correctionNote)
-        self.correctionNote = nil
-      end
-      -- Not after a cancelled search
-      if wasRunning and #results == 0 and self:TryCorrectedSearch() then
-        return
-      end
-      self.correcting = false
-      if wasRunning then
-        self:OpenBuyFrameIfObvious(results)
-      else
-        self.reopenKey = nil
-      end
-    end,
-    function(current, total, partialResults)
-      self.termProgress = { current = current, total = total }
-      Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate, partialResults, total, current)
-    end
-  )
-  self.SearchProvider.onPageProgress = function(progress)
-    local text = (SEARCHING or "Searching") .. " " .. progress.page .. "/" .. progress.totalPages
-    if self.termProgress and self.termProgress.total > 1 then
-      text = text .. "  (" .. self.termProgress.current .. "/" .. self.termProgress.total .. ")"
-    end
-    self:SetStatus(text)
-  end
-
-  Auctionary.EventBus:Register(self, {
-    Auctionary.Shopping.Tab.Events.SearchStart,
-    Auctionary.Shopping.Tab.Events.SearchEnd,
-    Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate,
-    Auctionary.Shopping.Tab.Events.UpdateSearchTerm,
-    Auctionary.Shopping.Events.RecentSearchesUpdate,
-    Auctionary.Shopping.Events.ListMetaChange,
-    Auctionary.Shopping.Events.ListItemChange,
-    Auctionary.Shopping.Events.ListImportFinished,
-  })
-
-  self:SetScript("OnShow", function()
-    self:RefreshSidePanel()
-    self.SearchBox:SetFocus()
-  end)
-  self:SetScript("OnHide", function()
-    if self.searchRunning then
-      self:StopSearch()
-    end
-  end)
-end
-
-function AuctionaryShoppingTabFrameMixin:CreateSearchOptions()
-  self.SearchBox = CreateFrame("EditBox", "AuctionaryShoppingSearchBox", self, "InputBoxTemplate")
-  self.SearchBox:SetWidth(260)
-  self.SearchBox:SetHeight(20)
-  self.SearchBox:SetPoint("TOPLEFT", self, "TOPLEFT", 88, -44)
-  self.SearchBox:SetAutoFocus(false)
-  self.SearchBox:SetMaxLetters(200)
-  self.SearchBox:SetScript("OnEnterPressed", function()
-    self:SearchButtonClicked()
-  end)
-  self.SearchBox:SetScript("OnEscapePressed", function(editBox)
-    editBox:ClearFocus()
-  end)
-
-  self.SearchButton = CreateFrame("Button", "AuctionaryShoppingSearchButton", self, "UIPanelButtonTemplate")
-  self.SearchButton:SetWidth(100)
-  self.SearchButton:SetHeight(22)
-  self.SearchButton:SetPoint("LEFT", self.SearchBox, "RIGHT", 8, 0)
-  self.SearchButton:SetText(AUCTIONARY_L_SEARCH)
-  self.SearchButton:SetScript("OnClick", function()
-    self:SearchButtonClicked()
-  end)
-
-  -- Runs the last search again
-  self.RefreshButton = CreateFrame("Button", "AuctionaryShoppingRefreshButton", self, "UIPanelButtonTemplate")
-  self.RefreshButton:SetWidth(28)
-  self.RefreshButton:SetHeight(22)
-  self.RefreshButton:SetPoint("LEFT", self.SearchButton, "RIGHT", 4, 0)
-  self.RefreshButton.Icon = self.RefreshButton:CreateTexture(nil, "OVERLAY")
-  self.RefreshButton.Icon:SetTexture("Interface\\AddOns\\Auctionary\\Images\\Refresh")
-  self.RefreshButton.Icon:SetWidth(16)
-  self.RefreshButton.Icon:SetHeight(16)
-  self.RefreshButton.Icon:SetPoint("CENTER", self.RefreshButton, "CENTER", 0, 0)
-  self.RefreshButton.Icon:SetVertexColor(1, 0.82, 0)
-  self.RefreshButton:SetScript("OnClick", function()
-    self:RefreshSearch()
-  end)
-  self.RefreshButton:SetScript("OnEnter", function(button)
-    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-    GameTooltip:SetText(REFRESH or "Refresh")
-    GameTooltip:Show()
-  end)
-  self.RefreshButton:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
-  self.RefreshButton:Disable()
-  self.RefreshButton.Icon:SetVertexColor(0.5, 0.5, 0.5)
-
-  -- Extended search options
-  self.MoreButton = CreateFrame("Button", "AuctionaryShoppingMoreButton", self, "UIPanelButtonTemplate")
-  self.MoreButton:SetWidth(28)
-  self.MoreButton:SetHeight(22)
-  self.MoreButton:SetPoint("LEFT", self.RefreshButton, "RIGHT", 4, 0)
-  self.MoreButton:SetText("...")
-  self.MoreButton:SetScript("OnClick", function()
-    self:ShowItemDialog(
-      AUCTIONARY_L_LIST_EXTENDED_SEARCH_HEADER or "Extended Search Options",
-      AUCTIONARY_L_SEARCH,
-      self:GetSearchTerm(),
-      function(searchTerm)
-        self:SetSearchTerm(searchTerm)
-        self:DoSearch({ searchTerm })
-        Auctionary.Shopping.Recents.Save(searchTerm)
-      end
-    )
-  end)
-  self.MoreButton:SetScript("OnEnter", function(button)
-    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-    GameTooltip:SetText(AUCTIONARY_L_LIST_EXTENDED_SEARCH_HEADER or "Extended Search Options")
-    GameTooltip:Show()
-  end)
-  self.MoreButton:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
-
-  self.Status = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  self.Status:SetPoint("LEFT", self.MoreButton, "RIGHT", 12, 0)
-  self.Status:SetJustifyH("LEFT")
-
-  -- Shift-clicking an item anywhere while the tab is open searches for it
-  -- (unless the link is going into an open chat line)
-  hooksecurefunc("ChatEdit_InsertLink", function(link)
-    if link == nil or not self:IsVisible() then
-      return
-    end
-    if (ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()) or
-       (ChatFrameEditBox and ChatFrameEditBox:IsVisible()) then
-      return
-    end
-    local name = Auctionary.Utilities.GetNameFromLink(link)
-    if name ~= nil and name ~= "" then
-      local searchTerm = "\"" .. name .. "\""
-      self:SetSearchTerm(searchTerm)
-      self:DoSearch({ searchTerm })
-      Auctionary.Shopping.Recents.Save(searchTerm)
-    end
-  end)
-end
-
----- Left side: shopping lists and recent searches
+---- Shopping tab
+--  top:    search box, Search/Cancel, refresh, "..." (extended search), status
+--  left:   shopping lists (or one opened list) / recent searches
+--  right:  one row per item found; a click opens its auctions to buy from
+--
+-- `shop` is a plain table that holds the frames; the list dialogs get it as
+-- data.view and call shop:ExpandList(name) / shop:ListRenamed(old, new).
 
 local VIEWS = Auctionary.Constants.ShoppingListViews
+local ListEvents = Auctionary.Shopping.Events
+local Info = Auctionary.Constants.AuctionItemInfo
+local SIDE_X, SIDE_WIDTH, TOP_Y = 26, 200, -82
+local CLICK_HINT = "Left click: search\nRight click: more"
 
-local function SmallButton(parent, text, width)
-  local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+local function Lists()
+  return Auctionary.Shopping.ListManager
+end
+
+local function ListByName(name)
+  if name ~= nil and Lists():GetIndexForName(name) ~= nil then
+    return Lists():GetByName(name)
+  end
+end
+
+local function Tip(frame, text, wrap)
+  frame:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(type(text) == "function" and text() or text, 1, 1, 1, 1, wrap)
+    GameTooltip:Show()
+  end)
+  frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+local function PanelButton(parent, name, text, width, height, small)
+  local button = CreateFrame("Button", name, parent, "UIPanelButtonTemplate")
   button:SetWidth(width)
-  button:SetHeight(20)
-  button:SetText(text)
-  button:SetNormalFontObject(GameFontNormalSmall)
-  button:SetHighlightFontObject(GameFontHighlightSmall)
-  button:SetDisabledFontObject(GameFontDisableSmall)
+  button:SetHeight(height or 22)
+  button:SetText(text or "")
+  if small then
+    button:SetNormalFontObject(GameFontNormalSmall)
+    button:SetHighlightFontObject(GameFontHighlightSmall)
+    button:SetDisabledFontObject(GameFontDisableSmall)
+  end
   return button
 end
 
-function AuctionaryShoppingTabFrameMixin:ShowItemDialog(title, finishedText, searchTerm, onFinished)
-  if self.itemDialog == nil then
-    self.itemDialog = Auctionary.Shopping.CreateItemDialog(self)
-  end
-  self.itemDialog:Init(title, finishedText)
-  self.itemDialog:SetOnFinishedClicked(onFinished)
-  self.itemDialog:SetItemString(searchTerm or "")
-  self.itemDialog:Show()
-  self.itemDialog.SearchString:SetFocus()
+local shop = {}
+
+---- Searching
+
+function shop:SetStatus(text)
+  self.status:SetText(text or "")
 end
 
-function AuctionaryShoppingTabFrameMixin:CreateSidePanel()
-  local SIDE_WIDTH = 200
+-- The box shows only the name part of an extended term; as long as it is
+-- unchanged, the whole term is used
+function shop:ShowTerm(term)
+  local parts = Auctionary.Search.SplitAdvancedSearch(term)
+  local text = parts.isExact and ("\"" .. parts.searchString .. "\"") or parts.searchString
+  self.fullTerm, self.boxText = term, text
+  self.box:SetText(text)
+end
 
-  self.ListsViewButton = SmallButton(self, AUCTIONARY_L_SHOPPING_LISTS or "Shopping Lists", SIDE_WIDTH / 2)
-  self.ListsViewButton:SetPoint("TOPLEFT", self, "TOPLEFT", 26, -82)
-  self.ListsViewButton:SetScript("OnClick", function()
-    self:SetSideView(VIEWS.Lists)
+function shop:TermInBox()
+  local text = self.box:GetText()
+  if self.fullTerm ~= nil and text == self.boxText then
+    return self.fullTerm
+  end
+  return text
+end
+
+function shop:SetRefreshable(on)
+  if on then
+    self.refreshButton:Enable()
+    self.refreshButton.icon:SetVertexColor(1, 0.82, 0)
+  else
+    self.refreshButton:Disable()
+    self.refreshButton.icon:SetVertexColor(0.5, 0.5, 0.5)
+  end
+end
+
+-- terms: list of search terms; remember: also put the first in the recents
+function shop:Run(terms, remember)
+  if terms == nil or #terms == 0 then
+    return
+  end
+  if remember then
+    Auctionary.Shopping.Recents.Save(terms[1])
+  end
+  self.search:Stop()
+  if self.buyFrame:IsShown() then
+    self.buyFrame:Close()
+  end
+  self.lastTerms = terms
+  self.termCount = #terms
+  self:SetRefreshable(true)
+  self.results:Clear()
+  self.results:MarkBusy()
+  self.searchButton:SetText(AUCTIONARY2_L_CANCEL)
+  self:SetStatus(SEARCHING or "Searching")
+  self.search:Start(terms)
+end
+
+function shop:RunTerm(term)
+  self:ShowTerm(term)
+  self:Run({ term }, true)
+end
+
+function shop:SearchOrCancel()
+  if self.search:IsRunning() then
+    self.search:Stop()
+    return
+  end
+  local term = self:TermInBox()
+  if term ~= "" then
+    self.box:ClearFocus()
+    self:Run({ term }, true)
+  end
+end
+
+function shop:Refresh()
+  if self.lastTerms ~= nil then
+    local open = self.buyFrame:IsShown() and self.buyFrame.result
+    self:Run(self.lastTerms)
+    self.reopenKey = open and open.key or nil
+  end
+end
+
+function shop:OnPage(progress)
+  local text = (SEARCHING or "Searching") .. " " .. progress.page .. "/" .. progress.totalPages
+  local number, count = self.search:GetPosition()
+  if count > 1 then
+    text = text .. "  (" .. number .. "/" .. count .. ")"
+  end
+  self:SetStatus(text)
+end
+
+-- A single term that found nothing is tried once more with the closest
+-- known item name ("etrnl life" -> "Eternal Life")
+function shop:TryCloseName()
+  if self.retried or self.lastTerms == nil or #self.lastTerms ~= 1 then
+    return false
+  end
+  local term = self.lastTerms[1]
+  local cut = term:find(Auctionary.Constants.AdvancedSearchDivider, 1, true)
+  local name, rest = term, ""
+  if cut then
+    name, rest = term:sub(1, cut - 1), term:sub(cut)
+  end
+  if name == "" or name:sub(1, 1) == "\"" then
+    return false
+  end
+  local close = Auctionary.Search.FindSimilarNames(name, 3)
+  if #close == 0 then
+    return false
+  end
+  local note = "Nothing found for \"" .. name .. "\". Showing \"" .. close[1] .. "\"."
+  if #close > 1 then
+    note = note .. "  Also close: " .. table.concat(close, ", ", 2)
+  end
+  self.retried = true
+  self:ShowTerm(close[1] .. rest)
+  self:Run({ close[1] .. rest })
+  self.pendingNote = note
+  return true
+end
+
+-- Straight to the auctions when there is nothing to choose, or when the
+-- search refreshed an opened item
+function shop:OpenIfObvious(found)
+  local key = self.reopenKey
+  self.reopenKey = nil
+  local pick
+  if key ~= nil then
+    for _, result in ipairs(found) do
+      if result.key == key then
+        pick = result
+      end
+    end
+  elseif #found == 1 and self.termCount == 1 then
+    pick = found[1]
+  end
+  if pick ~= nil and #pick.auctions > 0 then
+    self:OpenAuctions(pick)
+  end
+end
+
+function shop:OnDone(found, stopped)
+  self.results:Add(found, true)
+  self.searchButton:SetText(AUCTIONARY2_L_SEARCH)
+  self:SetStatus(self.pendingNote or "")
+  self.pendingNote = nil
+  if stopped then
+    self.reopenKey = nil
+    self.retried = false
+    return
+  end
+  if #found == 0 and self:TryCloseName() then
+    return
+  end
+  self.retried = false
+  self:OpenIfObvious(found)
+end
+
+---- Results and buying
+
+function shop:OpenAuctions(result)
+  self.search:Stop()
+  self.resultList:Hide()
+  self.buyFrame:Open(result)
+end
+
+-- After buying: quantities and lowest prices from the auctions left
+function shop:Recount()
+  for index = 1, self.results:Count() do
+    local result = self.results:At(index)
+    local total, lowest = 0, nil
+    for _, auction in ipairs(result.auctions) do
+      local count, buyout = auction.info[Info.Quantity] or 0, auction.info[Info.Buyout] or 0
+      total = total + count
+      if count > 0 and buyout > 0 then
+        lowest = math.min(lowest or math.huge, math.ceil(buyout / count))
+      end
+    end
+    if #result.auctions > 0 or result.totalQuantity > 0 then
+      result.totalQuantity, result.minPrice = total, lowest
+      result.available = Auctionary.Compat.FormatLargeNumber(total)
+    end
+  end
+  self.resultList:Refresh()
+end
+
+---- Left side
+
+function shop:OpenedList()
+  local list = ListByName(self.openList)
+  if list == nil then
+    self.openList = nil
+  end
+  return list
+end
+
+function shop:ExpandList(name)
+  self.openList = name
+  self.view = VIEWS.Lists
+  self:RefreshSide()
+end
+
+function shop:ListRenamed(oldName, newName)
+  if self.openList == oldName then
+    self.openList = newName
+  end
+  self:RefreshSide()
+end
+
+function shop:SetView(view)
+  self.view = view
+  Auctionary.Config.Set(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW, view)
+  self:RefreshSide()
+end
+
+function shop:SearchList(name)
+  local list = ListByName(name)
+  if list ~= nil and list:GetItemCount() > 0 then
+    self:Run(list:GetAllItems())
+  end
+end
+
+local function Named(list)
+  if list:IsTemporary() then
+    return list:GetName() .. " (" .. (AUCTIONARY2_L_TEMPORARY or "temporary") .. ")"
+  end
+  return list:GetName()
+end
+
+-- A list entry with the last scan price: green at or below the entry's
+-- maximum price, red above it
+local function EntryText(term)
+  local text = Auctionary.Search.PrettifySearchString(term)
+  local tip = CLICK_HINT
+  local parts = Auctionary.Search.SplitAdvancedSearch(term)
+  local itemID = Auctionary.Search.GetItemIDByName(parts.searchString)
+  local db = Auctionary.Database
+  local price = itemID and db ~= nil and db:GetPrice(tostring(itemID))
+  local limit = parts.maxPrice
+  if not price then
+    if limit ~= nil then
+      tip = tip .. "\n\nNo scan price known for this exact name."
+    end
+    return text, tip
+  end
+  local age = db:GetPriceAge(tostring(itemID))
+  local when = (age == nil and "") or (age == 0 and " (today)") or (" (" .. age .. " days ago)")
+  tip = tip .. "\n\nLowest in the last scan: " .. Auctionary.Compat.GetMoneyString(price, true) .. when
+  if limit ~= nil then
+    local money = Auctionary.Compat.GetMoneyString(limit, true)
+    if price <= limit then
+      text = "|cff20ff20" .. text .. "|r"
+      tip = tip .. "\n|cff20ff20At or below your maximum of " .. money .. "|r"
+    else
+      text = "|cffff6060" .. text .. "|r"
+      tip = tip .. "\n|cffff6060Above your maximum of " .. money .. "|r"
+    end
+  end
+  return text, tip
+end
+
+local function SideRows(self)
+  local rows, title = {}, nil
+  local opened = self:OpenedList()
+  if self.view == VIEWS.Recents then
+    title = AUCTIONARY2_L_RECENTS or "Recent Searches"
+    for _, term in ipairs(Auctionary.Shopping.Recents.GetAll()) do
+      rows[#rows + 1] = { kind = "recent", searchTerm = term,
+        text = Auctionary.Search.PrettifySearchString(term), tooltipText = CLICK_HINT }
+    end
+  elseif opened ~= nil then
+    title = Named(opened)
+    rows[1] = { kind = "back", text = "<  " .. (AUCTIONARY2_L_LISTS or "Shopping Lists") }
+    for index = 1, opened:GetItemCount() do
+      local term = opened:GetItemByIndex(index)
+      local ok, text, tip = pcall(EntryText, term)
+      if not ok then
+        text, tip = Auctionary.Search.PrettifySearchString(term), CLICK_HINT
+      end
+      rows[#rows + 1] = { kind = "term", index = index, searchTerm = term, text = text, tooltipText = tip }
+    end
+  else
+    title = AUCTIONARY2_L_LISTS or "Shopping Lists"
+    for index = 1, Lists():GetCount() do
+      local list = Lists():GetByIndex(index)
+      rows[#rows + 1] = { kind = "list", listName = list:GetName(),
+        text = Named(list) .. "  (" .. list:GetItemCount() .. ")", tooltipText = "Left click: open\nRight click: more" }
+    end
+  end
+  return rows, title, opened
+end
+
+function shop:RefreshSide()
+  local rows, title, opened = SideRows(self)
+  self.sideList:SetColumnTitle(1, title)
+  self.side:Replace(rows)
+
+  local lists = self.view ~= VIEWS.Recents
+  local shown = {
+    [self.newListButton] = lists and opened == nil,
+    [self.importButton] = lists and opened == nil,
+    [self.searchAllButton] = lists and opened ~= nil,
+    [self.addButton] = lists and opened ~= nil,
+  }
+  for button, on in pairs(shown) do
+    if on then button:Show() else button:Hide() end
+  end
+  if lists then
+    self.listsButton:LockHighlight()
+    self.recentsButton:UnlockHighlight()
+  else
+    self.listsButton:UnlockHighlight()
+    self.recentsButton:LockHighlight()
+  end
+end
+
+function shop:Menu(entries)
+  local menu = {}
+  for _, entry in ipairs(entries) do
+    menu[#menu + 1] = { text = entry[1], func = entry[2], notCheckable = 1 }
+  end
+  menu[#menu + 1] = { text = CANCEL, notCheckable = 1 }
+  EasyMenu(menu, self.menuFrame, "cursor", 0, 0, "MENU")
+end
+
+function shop:EditTerm(title, buttonText, term, onDone)
+  if self.editor == nil then
+    self.editor = Auctionary.Shopping.CreateSearchEditor(self.frame)
+  end
+  self.editor:Edit(title, buttonText, term or "", onDone)
+end
+
+local Dialog = Auctionary.Constants.DialogNames
+local DELETE_TEXT = function() return AUCTIONARY2_L_DELETE or DELETE end
+
+local function ListMenu(self, name)
+  local list = Lists():GetByName(name)
+  local data = { view = self, listName = name }
+  local entries = { { AUCTIONARY2_L_LIST_SEARCH_ALL or "Search All", function() self:SearchList(name) end } }
+  if list:IsTemporary() then
+    entries[#entries + 1] = { AUCTIONARY2_L_LIST_KEEP or "Make Permanent",
+      function() StaticPopup_Show(Dialog.MakePermanentShoppingList, name, nil, data) end }
+  else
+    entries[#entries + 1] = { AUCTIONARY2_L_RENAME or "Rename",
+      function() StaticPopup_Show(Dialog.RenameShoppingList, name, nil, data) end }
+  end
+  entries[#entries + 1] = { "Export", function()
+    Auctionary.Components.ShowTextDialog("Export: " .. name,
+      "Copy this text (Ctrl+C). It can be imported again with the Import button.",
+      Auctionary.Shopping.Lists.GetBatchExportString(name))
+  end }
+  entries[#entries + 1] = { DELETE_TEXT(),
+    function() StaticPopup_Show(Dialog.DeleteShoppingList, name, nil, data) end }
+  return entries
+end
+
+local function TermMenu(self, row)
+  local name, index, term = self.openList, row.index, row.searchTerm
+  local edit = AUCTIONARY2_L_EDIT or "Edit Item"
+  return {
+    { AUCTIONARY2_L_SEARCH, function() self:RunTerm(term) end },
+    { edit, function()
+      self:EditTerm(AUCTIONARY2_L_EDITOR_EDIT_TITLE or "Edit Shopping List Item", edit, term, function(newTerm)
+        local list = ListByName(name)
+        -- Only if the entry was not changed or moved meanwhile
+        if list ~= nil and list:GetItemByIndex(index) == term then
+          list:AlterItem(index, newTerm)
+        end
+      end)
+    end },
+    { DELETE_TEXT(), function()
+      local list = self:OpenedList()
+      if list ~= nil and list:GetItemByIndex(index) == term then
+        list:DeleteItem(index)
+      end
+    end },
+  }
+end
+
+local function RecentMenu(self, row)
+  local term = row.searchTerm
+  local entries = { { AUCTIONARY2_L_SEARCH, function() self:RunTerm(term) end } }
+  local list = self:OpenedList()
+  if list ~= nil then
+    entries[#entries + 1] = { (AUCTIONARY2_L_LIST_ADD or "Add To List") .. ": " .. list:GetName(),
+      function() list:InsertItem(term) end }
+  end
+  entries[#entries + 1] = { DELETE_TEXT(), function() Auctionary.Shopping.Recents.DeleteEntry(term) end }
+  return entries
+end
+
+function shop:SideClicked(row, mouseButton)
+  local right = mouseButton == "RightButton"
+  if row.kind == "back" then
+    self.openList = nil
+    self:RefreshSide()
+  elseif row.kind == "list" then
+    if right then self:Menu(ListMenu(self, row.listName)) else self:ExpandList(row.listName) end
+  elseif row.kind == "term" then
+    if right then self:Menu(TermMenu(self, row)) else self:RunTerm(row.searchTerm) end
+  elseif row.kind == "recent" then
+    if right then self:Menu(RecentMenu(self, row)) else self:RunTerm(row.searchTerm) end
+  end
+end
+
+---- Building the tab
+
+local RESULT_COLUMNS = {
+  { title = AUCTIONARY2_L_COL_PRICE, sort = "minPrice",
+    field = "minPrice", kind = "price", width = 140, buyDot = true },
+  { title = AUCTIONARY2_L_COL_NAME, sort = "name",
+    field = "name", kind = "item" },
+  { title = AUCTIONARY2_L_ITEM_LEVEL, sort = "itemLevel",
+    field = "itemLevel", width = 90 },
+  { title = AUCTIONARY2_L_COL_AVAILABLE, sort = "totalQuantity",
+    field = "available", width = 80 },
+}
+
+local function BuildTop(self, frame)
+  self.box = CreateFrame("EditBox", "Auctionary2ShoppingSearchBox", frame, "InputBoxTemplate")
+  self.box:SetWidth(260)
+  self.box:SetHeight(20)
+  self.box:SetPoint("TOPLEFT", frame, "TOPLEFT", 88, -44)
+  self.box:SetAutoFocus(false)
+  self.box:SetMaxLetters(200)
+  self.box:SetScript("OnEnterPressed", function() self:SearchOrCancel() end)
+  self.box:SetScript("OnEscapePressed", function(box) box:ClearFocus() end)
+
+  self.searchButton = PanelButton(frame, "Auctionary2ShoppingSearchButton", AUCTIONARY2_L_SEARCH, 100)
+  self.searchButton:SetPoint("LEFT", self.box, "RIGHT", 8, 0)
+  self.searchButton:SetScript("OnClick", function() self:SearchOrCancel() end)
+
+  -- Same search again
+  self.refreshButton = PanelButton(frame, "Auctionary2ShoppingRefreshButton", nil, 28)
+  self.refreshButton:SetPoint("LEFT", self.searchButton, "RIGHT", 4, 0)
+  local icon = self.refreshButton:CreateTexture(nil, "OVERLAY")
+  icon:SetTexture("Interface\\AddOns\\Auctionary\\Images\\Refresh")
+  icon:SetWidth(16)
+  icon:SetHeight(16)
+  icon:SetPoint("CENTER", 0, 0)
+  self.refreshButton.icon = icon
+  self.refreshButton:SetScript("OnClick", function() self:Refresh() end)
+  Tip(self.refreshButton, REFRESH or "Refresh")
+  self:SetRefreshable(false)
+
+  local extended = AUCTIONARY2_L_EDITOR_SEARCH_TITLE or "Extended Search Options"
+  local more = PanelButton(frame, "Auctionary2ShoppingMoreButton", "...", 28)
+  self.moreButton = more
+  more:SetPoint("LEFT", self.refreshButton, "RIGHT", 4, 0)
+  more:SetScript("OnClick", function()
+    self:EditTerm(extended, AUCTIONARY2_L_SEARCH, self:TermInBox(), function(term) self:RunTerm(term) end)
   end)
+  Tip(more, extended)
 
-  self.RecentsViewButton = SmallButton(self, AUCTIONARY_L_RECENT_SEARCHES or "Recent Searches", SIDE_WIDTH / 2)
-  self.RecentsViewButton:SetPoint("LEFT", self.ListsViewButton, "RIGHT", 0, 0)
-  self.RecentsViewButton:SetScript("OnClick", function()
-    self:SetSideView(VIEWS.Recents)
+  self.status = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  self.status:SetPoint("LEFT", more, "RIGHT", 12, 0)
+  self.status:SetJustifyH("LEFT")
+
+  -- Shift-click on an item anywhere searches for it while the tab is open,
+  -- unless the link goes into a chat line
+  hooksecurefunc("ChatEdit_InsertLink", function(link)
+    if link == nil or not frame:IsVisible() then
+      return
+    end
+    local typing = (ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow())
+      or (ChatFrameEditBox and ChatFrameEditBox:IsVisible())
+    local name = not typing and Auctionary.Utilities.GetNameFromLink(link)
+    if name and name ~= "" then
+      self:RunTerm("\"" .. name .. "\"")
+    end
   end)
+end
 
-  self.SideProvider = Auctionary.Components.CreateDataProvider({
-    layout = SIDE_TABLE_LAYOUT,
+local function BuildSide(self, frame)
+  local half = SIDE_WIDTH / 2
+  self.listsButton = PanelButton(frame, nil, AUCTIONARY2_L_LISTS or "Shopping Lists", half, 20, true)
+  self.listsButton:SetPoint("TOPLEFT", frame, "TOPLEFT", SIDE_X, TOP_Y)
+  self.listsButton:SetScript("OnClick", function() self:SetView(VIEWS.Lists) end)
+
+  self.recentsButton = PanelButton(frame, nil, AUCTIONARY2_L_RECENTS or "Recent Searches", half, 20, true)
+  self.recentsButton:SetPoint("LEFT", self.listsButton, "RIGHT", 0, 0)
+  self.recentsButton:SetScript("OnClick", function() self:SetView(VIEWS.Recents) end)
+
+  self.side = Auctionary.Components.CreateRowSet({
+    columns = { { title = AUCTIONARY2_L_RECENTS or "Recent Searches", field = "text" } },
   })
-  self.SideListing = Auctionary.Components.CreateResultsListing(self, self.SideProvider, {
-    onRowClick = function(rowData, mouseButton)
-      self:SideRowClicked(rowData, mouseButton)
-    end,
-    isRowSelected = function(rowData)
-      return rowData.kind == "back"
-    end,
+  self.sideList = Auctionary.Components.CreateTable(frame, self.side, {
+    onRowClick = function(row, mouseButton) self:SideClicked(row, mouseButton) end,
+    isRowSelected = function(row) return row.kind == "back" end,
     noEmptyText = true,
   })
-  self.SideListing:SetPoint("TOPLEFT", self.ListsViewButton, "BOTTOMLEFT", 0, -2)
-  self.SideListing:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26, 68)
-  self.SideListing:SetWidth(SIDE_WIDTH)
+  self.sideList:SetPoint("TOPLEFT", self.listsButton, "BOTTOMLEFT", 0, -2)
+  self.sideList:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", SIDE_X, 68)
+  self.sideList:SetWidth(SIDE_WIDTH)
 
-  -- Bottom row, depends on what is shown above
-  self.ImportButton = SmallButton(self, "Import", SIDE_WIDTH / 3)
-  self.ImportButton:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26 + SIDE_WIDTH * 2 / 3, 46)
-  self.ImportButton:SetScript("OnClick", function()
-    Auctionary.Components.ShowTextDialog(
-      "Import shopping lists",
+  -- Bottom row: New List + Import for all lists, Search All + Add To List
+  -- for an opened list
+  local third = SIDE_WIDTH / 3
+  self.newListButton = PanelButton(frame, nil, AUCTIONARY2_L_LIST_NEW or "New List", third * 2, 20, true)
+  self.newListButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", SIDE_X, 46)
+  self.newListButton:SetScript("OnClick", function()
+    StaticPopup_Show(Dialog.CreateShoppingList, nil, nil, { view = self })
+  end)
+
+  self.importButton = PanelButton(frame, nil, "Import", third, 20, true)
+  self.importButton:SetPoint("LEFT", self.newListButton, "RIGHT", 0, 0)
+  self.importButton:SetScript("OnClick", function()
+    Auctionary.Components.ShowTextDialog("Import shopping lists",
       "Paste an exported list here (one list per line: name^item^item ...). A list with the same name is replaced.",
       "", "Import",
       function(text)
         text = strtrim(text or "")
         if text ~= "" then
           Auctionary.Shopping.Lists.BatchImportFromString(text)
-          self:RefreshSidePanel()
+          self:RefreshSide()
         end
-      end
-    )
+      end)
   end)
 
-  self.NewListButton = SmallButton(self, AUCTIONARY_L_NEW_LIST or "New List", SIDE_WIDTH * 2 / 3)
-  self.NewListButton:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26, 46)
-  self.NewListButton:SetScript("OnClick", function()
-    StaticPopup_Show(Auctionary.Constants.DialogNames.CreateShoppingList, nil, nil, { view = self })
-  end)
+  self.searchAllButton = PanelButton(frame, nil, AUCTIONARY2_L_LIST_SEARCH_ALL or "Search All", half, 20, true)
+  self.searchAllButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", SIDE_X, 46)
+  self.searchAllButton:SetScript("OnClick", function() self:SearchList(self.openList) end)
 
-  self.SearchAllButton = SmallButton(self, AUCTIONARY_L_SEARCH_ALL or "Search All", SIDE_WIDTH / 2)
-  self.SearchAllButton:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", 26, 46)
-  self.SearchAllButton:SetScript("OnClick", function()
-    self:SearchList(self.expandedListName)
-  end)
-
-  self.AddToListButton = SmallButton(self, AUCTIONARY_L_ADD_TO_LIST or "Add To List", SIDE_WIDTH / 2)
-  self.AddToListButton:SetPoint("LEFT", self.SearchAllButton, "RIGHT", 0, 0)
-  self.AddToListButton:SetScript("OnClick", function()
-    local list = self:GetExpandedList()
-    local searchTerm = self:GetSearchTerm()
-    if list ~= nil and searchTerm ~= "" then
-      list:InsertItem(searchTerm)
+  self.addButton = PanelButton(frame, nil, AUCTIONARY2_L_LIST_ADD or "Add To List", half, 20, true)
+  self.addButton:SetPoint("LEFT", self.searchAllButton, "RIGHT", 0, 0)
+  self.addButton:SetScript("OnClick", function()
+    local list, term = self:OpenedList(), self:TermInBox()
+    if list ~= nil and term ~= "" then
+      list:InsertItem(term)
     end
   end)
-  self.AddToListButton:SetScript("OnEnter", function(button)
-    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Adds what is in the search box to this list", 1, 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  self.AddToListButton:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
+  Tip(self.addButton, "Adds what is in the search box to this list", true)
 
-  self.SideMenu = CreateFrame("Frame", "AuctionaryShoppingSideMenu", UIParent, "UIDropDownMenuTemplate")
-
-  self.sideView = Auctionary.Config.Get(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW)
-  if self.sideView ~= VIEWS.Recents then
-    self.sideView = VIEWS.Lists
-  end
+  self.menuFrame = CreateFrame("Frame", "Auctionary2ShoppingSideMenu", UIParent, "UIDropDownMenuTemplate")
+  local saved = Auctionary.Config.Get(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW)
+  self.view = saved == VIEWS.Recents and VIEWS.Recents or VIEWS.Lists
 end
 
-function AuctionaryShoppingTabFrameMixin:SetSideView(view)
-  self.sideView = view
-  Auctionary.Config.Set(Auctionary.Config.Options.SHOPPING_LAST_CONTAINER_VIEW, view)
-  self:RefreshSidePanel()
-end
-
-function AuctionaryShoppingTabFrameMixin:GetExpandedList()
-  if self.expandedListName == nil then
-    return nil
-  end
-  if Auctionary.Shopping.ListManager:GetIndexForName(self.expandedListName) == nil then
-    self.expandedListName = nil
-    return nil
-  end
-  return Auctionary.Shopping.ListManager:GetByName(self.expandedListName)
-end
-
-function AuctionaryShoppingTabFrameMixin:ExpandList(listName)
-  self.expandedListName = listName
-  self.sideView = VIEWS.Lists
-  self:RefreshSidePanel()
-end
-
-function AuctionaryShoppingTabFrameMixin:CollapseList()
-  self.expandedListName = nil
-  self:RefreshSidePanel()
-end
-
-function AuctionaryShoppingTabFrameMixin:ListRenamed(oldName, newName)
-  if self.expandedListName == oldName then
-    self.expandedListName = newName
-  end
-  self:RefreshSidePanel()
-end
-
-function AuctionaryShoppingTabFrameMixin:SearchList(listName)
-  local list = listName and Auctionary.Shopping.ListManager:GetIndexForName(listName) ~= nil
-    and Auctionary.Shopping.ListManager:GetByName(listName)
-  if list and list:GetItemCount() > 0 then
-    self:DoSearch(list:GetAllItems())
-  end
-end
-
--- Text and tooltip of a list entry, with the price of the last scan: green
--- when it is at or below the entry's maximum price, red when above
-local function TermDisplay(searchTerm)
-  local text = Auctionary.Search.PrettifySearchString(searchTerm)
-  local tooltipText = "Left click: search\nRight click: more"
-  local split = Auctionary.Search.SplitAdvancedSearch(searchTerm)
-  local itemID = Auctionary.Search.GetItemIDByName(split.searchString)
-  local price = itemID and Auctionary.Database ~= nil and Auctionary.Database:GetPrice(tostring(itemID))
-  if price then
-    local priceText = Auctionary.Compat.GetMoneyString(price, true)
-    local age = Auctionary.Database:GetPriceAge(tostring(itemID))
-    local ageText = age == nil and "" or (age == 0 and " (today)" or (" (" .. age .. " days ago)"))
-    tooltipText = tooltipText .. "\n\nLowest in the last scan: " .. priceText .. ageText
-    if split.maxPrice ~= nil then
-      local limit = Auctionary.Compat.GetMoneyString(split.maxPrice, true)
-      if price <= split.maxPrice then
-        text = "|cff20ff20" .. text .. "|r"
-        tooltipText = tooltipText .. "\n|cff20ff20At or below your maximum of " .. limit .. "|r"
-      else
-        text = "|cffff6060" .. text .. "|r"
-        tooltipText = tooltipText .. "\n|cffff6060Above your maximum of " .. limit .. "|r"
-      end
-    end
-  elseif split.maxPrice ~= nil then
-    tooltipText = tooltipText .. "\n\nNo scan price known for this exact name."
-  end
-  return text, tooltipText
-end
-
-local function ListDisplayName(list)
-  if list:IsTemporary() then
-    return list:GetName() .. " (" .. (AUCTIONARY_L_TEMPORARY_LOWER_CASE or "temporary") .. ")"
-  end
-  return list:GetName()
-end
-
-function AuctionaryShoppingTabFrameMixin:RefreshSidePanel()
-  local entries = {}
-  local header
-  local expandedList = self:GetExpandedList()
-
-  if self.sideView == VIEWS.Recents then
-    header = AUCTIONARY_L_RECENT_SEARCHES or "Recent Searches"
-    for _, searchTerm in ipairs(Auctionary.Shopping.Recents.GetAll()) do
-      table.insert(entries, {
-        kind = "recent",
-        searchTerm = searchTerm,
-        text = Auctionary.Search.PrettifySearchString(searchTerm),
-        tooltipText = "Left click: search\nRight click: more",
-      })
-    end
-  elseif expandedList ~= nil then
-    header = ListDisplayName(expandedList)
-    table.insert(entries, {
-      kind = "back",
-      text = "<  " .. (AUCTIONARY_L_SHOPPING_LISTS or "Shopping Lists"),
-    })
-    for index = 1, expandedList:GetItemCount() do
-      local searchTerm = expandedList:GetItemByIndex(index)
-      local ok, text, tooltipText = pcall(TermDisplay, searchTerm)
-      table.insert(entries, {
-        kind = "term",
-        index = index,
-        searchTerm = searchTerm,
-        text = ok and text or Auctionary.Search.PrettifySearchString(searchTerm),
-        tooltipText = ok and tooltipText or "Left click: search\nRight click: more",
-      })
-    end
-  else
-    header = AUCTIONARY_L_SHOPPING_LISTS or "Shopping Lists"
-    for index = 1, Auctionary.Shopping.ListManager:GetCount() do
-      local list = Auctionary.Shopping.ListManager:GetByIndex(index)
-      table.insert(entries, {
-        kind = "list",
-        listName = list:GetName(),
-        text = ListDisplayName(list) .. "  (" .. list:GetItemCount() .. ")",
-        tooltipText = "Left click: open\nRight click: more",
-      })
-    end
-  end
-
-  self.SideListing.columns[1].header.Text:SetText(header)
-  self.SideProvider:SetEntries(entries)
-
-  local showingLists = self.sideView ~= VIEWS.Recents
-  if showingLists and expandedList ~= nil then
-    self.NewListButton:Hide()
-    self.ImportButton:Hide()
-    self.SearchAllButton:Show()
-    self.AddToListButton:Show()
-  elseif showingLists then
-    self.NewListButton:Show()
-    self.ImportButton:Show()
-    self.SearchAllButton:Hide()
-    self.AddToListButton:Hide()
-  else
-    self.NewListButton:Hide()
-    self.ImportButton:Hide()
-    self.SearchAllButton:Hide()
-    self.AddToListButton:Hide()
-  end
-
-  if showingLists then
-    self.ListsViewButton:LockHighlight()
-    self.RecentsViewButton:UnlockHighlight()
-  else
-    self.ListsViewButton:UnlockHighlight()
-    self.RecentsViewButton:LockHighlight()
-  end
-end
-
-function AuctionaryShoppingTabFrameMixin:ShowSideMenu(entries)
-  local menu = {}
-  for _, entry in ipairs(entries) do
-    table.insert(menu, { text = entry[1], func = entry[2], notCheckable = 1 })
-  end
-  table.insert(menu, { text = CANCEL, notCheckable = 1 })
-  EasyMenu(menu, self.SideMenu, "cursor", 0, 0, "MENU")
-end
-
-function AuctionaryShoppingTabFrameMixin:SideRowClicked(rowData, mouseButton)
-  local DialogNames = Auctionary.Constants.DialogNames
-  local search = function()
-    self:SetSearchTerm(rowData.searchTerm)
-    self:DoSearch({ rowData.searchTerm })
-  end
-
-  if rowData.kind == "back" then
-    self:CollapseList()
-
-  elseif rowData.kind == "recent" then
-    if mouseButton == "RightButton" then
-      local entries = { { AUCTIONARY_L_SEARCH, search } }
-      local list = self:GetExpandedList()
-      if list ~= nil then
-        table.insert(entries, {
-          (AUCTIONARY_L_ADD_TO_LIST or "Add To List") .. ": " .. list:GetName(),
-          function() list:InsertItem(rowData.searchTerm) end,
-        })
-      end
-      table.insert(entries, { AUCTIONARY_L_DELETE or DELETE, function()
-        Auctionary.Shopping.Recents.DeleteEntry(rowData.searchTerm)
-      end })
-      self:ShowSideMenu(entries)
-    else
-      search()
-    end
-
-  elseif rowData.kind == "list" then
-    local listName = rowData.listName
-    if mouseButton == "RightButton" then
-      local list = Auctionary.Shopping.ListManager:GetByName(listName)
-      local entries = {
-        { AUCTIONARY_L_SEARCH_ALL or "Search All", function() self:SearchList(listName) end },
-      }
-      if list:IsTemporary() then
-        table.insert(entries, { AUCTIONARY_L_MAKE_PERMANENT or "Make Permanent", function()
-          StaticPopup_Show(DialogNames.MakePermanentShoppingList, listName, nil, { view = self, listName = listName })
-        end })
-      else
-        table.insert(entries, { AUCTIONARY_L_RENAME or "Rename", function()
-          StaticPopup_Show(DialogNames.RenameShoppingList, listName, nil, { view = self, listName = listName })
-        end })
-      end
-      table.insert(entries, { "Export", function()
-        Auctionary.Components.ShowTextDialog(
-          "Export: " .. listName,
-          "Copy this text (Ctrl+C). It can be imported again with the Import button.",
-          Auctionary.Shopping.Lists.GetBatchExportString(listName)
-        )
-      end })
-      table.insert(entries, { AUCTIONARY_L_DELETE or DELETE, function()
-        StaticPopup_Show(DialogNames.DeleteShoppingList, listName, nil, { view = self, listName = listName })
-      end })
-      self:ShowSideMenu(entries)
-    else
-      self:ExpandList(listName)
-    end
-
-  elseif rowData.kind == "term" then
-    if mouseButton == "RightButton" then
-      self:ShowSideMenu({
-        { AUCTIONARY_L_SEARCH, search },
-        { AUCTIONARY_L_EDIT_ITEM or "Edit Item", function()
-          local listName, index, oldTerm = self.expandedListName, rowData.index, rowData.searchTerm
-          self:ShowItemDialog(
-            AUCTIONARY_L_LIST_EDIT_ITEM_HEADER or "Edit Shopping List Item",
-            AUCTIONARY_L_EDIT_ITEM or "Edit Item",
-            oldTerm,
-            function(newTerm)
-              local list = Auctionary.Shopping.ListManager:GetIndexForName(listName) ~= nil
-                and Auctionary.Shopping.ListManager:GetByName(listName)
-              if list and list:GetItemByIndex(index) == oldTerm then
-                list:AlterItem(index, newTerm)
-              end
-            end
-          )
-        end },
-        { AUCTIONARY_L_DELETE or DELETE, function()
-          local list = self:GetExpandedList()
-          if list ~= nil and list:GetItemByIndex(rowData.index) == rowData.searchTerm then
-            list:DeleteItem(rowData.index)
-          end
-        end },
-      })
-    else
-      search()
-    end
-  end
-end
-
-function AuctionaryShoppingTabFrameMixin:CreateResults()
-  self.DataProvider = Auctionary.Components.CreateDataProvider({
-    layout = SHOPPING_LIST_TABLE_LAYOUT,
-    uniqueKey = function(entry) return entry.key end,
-    comparators = {
-      minPrice = Auctionary.Utilities.NumberComparator,
-      name = Auctionary.Utilities.StringComparator,
-      totalQuantity = Auctionary.Utilities.NumberComparator,
-      itemLevel = Auctionary.Utilities.NumberComparator,
+local function BuildResults(self, frame)
+  local U = Auctionary.Utilities
+  self.results = Auctionary.Components.CreateRowSet({
+    columns = RESULT_COLUMNS,
+    rowKey = function(result) return result.key end,
+    sorters = {
+      minPrice = U.NumberComparator, totalQuantity = U.NumberComparator,
+      itemLevel = U.NumberComparator, name = U.StringComparator,
     },
   })
-
-  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
-    onRowClick = function(rowData, mouseButton)
+  self.resultList = Auctionary.Components.CreateTable(frame, self.results, {
+    onRowClick = function(result)
       if IsShiftKeyDown() then
-        self:SetSearchTerm("\"" .. rowData.plainItemName .. "\"")
-      elseif #rowData.auctions > 0 then
-        self:OpenBuyFrame(rowData)
+        self:ShowTerm("\"" .. result.plainItemName .. "\"")
+      elseif #result.auctions > 0 then
+        self:OpenAuctions(result)
       end
     end,
   })
-  self.ResultsListing:SetPoint("TOPLEFT", self, "TOPLEFT", 234, -82)
-  self.ResultsListing:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -14, 44)
-end
+  self.resultList:SetPoint("TOPLEFT", frame, "TOPLEFT", 234, TOP_Y)
+  self.resultList:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -14, 44)
 
--- Quantities and prices after something was bought
-function AuctionaryShoppingTabFrameMixin:RefreshResults()
-  local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
-  for index = 1, self.DataProvider:GetCount() do
-    local entry = self.DataProvider:GetEntryAt(index)
-    local total, minPrice = 0, nil
-    for _, auction in ipairs(entry.auctions) do
-      local count = auction.info[AuctionItemInfo.Quantity] or 0
-      local buyout = auction.info[AuctionItemInfo.Buyout] or 0
-      total = total + count
-      if buyout > 0 and count > 0 then
-        local unitPrice = math.ceil(buyout / count)
-        if minPrice == nil or unitPrice < minPrice then
-          minPrice = unitPrice
-        end
-      end
-    end
-    if #entry.auctions > 0 or entry.totalQuantity > 0 then
-      entry.totalQuantity = total
-      entry.minPrice = minPrice
-      entry.available = Auctionary.Compat.FormatLargeNumber(total)
-    end
-  end
-  self.ResultsListing:Refresh()
-end
-
-function AuctionaryShoppingTabFrameMixin:SetStatus(text)
-  self.Status:SetText(text or "")
-end
-
-function AuctionaryShoppingTabFrameMixin:SetSearchTerm(searchTerm)
-  self.lastSearchTerm = searchTerm
-  local split = Auctionary.Search.SplitAdvancedSearch(searchTerm)
-  local text = split.searchString
-  if split.isExact then
-    text = "\"" .. text .. "\""
-  end
-  self.shownSearchText = text
-  self.SearchBox:SetText(text)
-end
-
--- The box only shows the name part of an extended search term
-function AuctionaryShoppingTabFrameMixin:GetSearchTerm()
-  local text = self.SearchBox:GetText()
-  if self.lastSearchTerm ~= nil and text == self.shownSearchText then
-    return self.lastSearchTerm
-  end
-  return text
-end
-
-function AuctionaryShoppingTabFrameMixin:SearchButtonClicked()
-  if self.searchRunning then
-    self:StopSearch()
-    return
-  end
-  local searchTerm = self:GetSearchTerm()
-  if searchTerm == "" then
-    return
-  end
-  self.SearchBox:ClearFocus()
-  self:DoSearch({ searchTerm })
-  Auctionary.Shopping.Recents.Save(searchTerm)
-end
-
-function AuctionaryShoppingTabFrameMixin:DoSearch(terms, options)
-  if #terms == 0 then
-    return
-  end
-
-  self:StopSearch()
-  if self.BuyFrame:IsShown() then
-    self.BuyFrame:Close()
-  end
-
-  self.lastTerms = terms
-  self.lastOptions = options
-  self.RefreshButton:Enable()
-  self.RefreshButton.Icon:SetVertexColor(1, 0.82, 0)
-
-  self.searchRunning = true
-  self.termProgress = nil
-  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.SearchStart, terms)
-  self.SearchProvider:Search(terms, options or {})
-end
-
--- A search for one term that found nothing is tried once more with the
--- closest known item name ("etrnl life" -> "Eternal Life"). Returns true
--- when such a search was started.
-function AuctionaryShoppingTabFrameMixin:TryCorrectedSearch()
-  if self.correcting or self.lastTerms == nil or #self.lastTerms ~= 1 then
-    return false
-  end
-  local term = self.lastTerms[1]
-  local divider = Auctionary.Constants.AdvancedSearchDivider
-  local dividerAt = term:find(divider, 1, true)
-  local text = dividerAt and term:sub(1, dividerAt - 1) or term
-  local rest = dividerAt and term:sub(dividerAt) or ""
-  if text == "" or text:sub(1, 1) == "\"" then
-    return false -- nothing typed, or an exact search in quotes
-  end
-
-  local similar = Auctionary.Search.FindSimilarNames(text, 3)
-  if #similar == 0 then
-    return false
-  end
-  local note = "Nothing found for \"" .. text .. "\". Showing \"" .. similar[1] .. "\"."
-  if #similar > 1 then
-    note = note .. "  Also close: " .. table.concat(similar, ", ", 2)
-  end
-
-  self.correcting = true
-  self:SetSearchTerm(similar[1] .. rest)
-  self:DoSearch({ similar[1] .. rest }, self.lastOptions)
-  self.correctionNote = note
-  return true
-end
-
--- Searches again for the same terms. With the list of auctions of an item
--- open, that list is shown again afterwards with the new auctions.
-function AuctionaryShoppingTabFrameMixin:RefreshSearch()
-  if self.lastTerms == nil then
-    return
-  end
-  local reopenKey = self.BuyFrame:IsShown() and self.BuyFrame.result and self.BuyFrame.result.key
-  self:DoSearch(self.lastTerms, self.lastOptions)
-  self.reopenKey = reopenKey
-end
-
-function AuctionaryShoppingTabFrameMixin:OpenBuyFrame(result)
-  self:StopSearch()
-  self.ResultsListing:Hide()
-  self.BuyFrame:Open(result)
-  Auctionary.EventBus:Fire(self, Auctionary.Shopping.Tab.Events.BuyScreenShown)
-end
-
--- After a finished search: straight to the auctions when there is nothing
--- to choose from, or when the search was a refresh of that list
-function AuctionaryShoppingTabFrameMixin:OpenBuyFrameIfObvious(results)
-  local reopenKey = self.reopenKey
-  self.reopenKey = nil
-
-  local target
-  if reopenKey ~= nil then
-    for _, result in ipairs(results) do
-      if result.key == reopenKey then
-        target = result
-      end
-    end
-  elseif #results == 1 and self.lastTerms ~= nil and #self.lastTerms == 1 then
-    target = results[1]
-  end
-
-  if target ~= nil and #target.auctions > 0 then
-    self:OpenBuyFrame(target)
+  self.buyFrame = Auctionary.Buying.CreateFrame(frame)
+  self.buyFrame:SetPoint("TOPLEFT", self.resultList, "TOPLEFT", 0, 0)
+  self.buyFrame:SetPoint("BOTTOMRIGHT", self.resultList, "BOTTOMRIGHT", 0, 0)
+  self.buyFrame.onClose = function()
+    self.resultList:Show()
+    self:Recount()
   end
 end
 
-function AuctionaryShoppingTabFrameMixin:StopSearch()
-  self.searchRunning = false
-  self.SearchProvider:AbortSearch()
-end
-
-function AuctionaryShoppingTabFrameMixin:ReceiveEvent(eventName, eventData)
-  if eventName == Auctionary.Shopping.Tab.Events.SearchStart then
-    self.DataProvider:Reset()
-    self.DataProvider.onSearchStarted()
-    self.SearchButton:SetText(AUCTIONARY_L_CANCEL)
-    self:SetStatus(SEARCHING or "Searching")
-  elseif eventName == Auctionary.Shopping.Tab.Events.SearchEnd then
-    self.DataProvider:AppendEntries(eventData, true)
-    self.SearchButton:SetText(AUCTIONARY_L_SEARCH)
-  elseif eventName == Auctionary.Shopping.Tab.Events.SearchIncrementalUpdate then
-    self.DataProvider:AppendEntries(eventData)
-  elseif eventName == Auctionary.Shopping.Tab.Events.UpdateSearchTerm then
-    self:SetSearchTerm(eventData)
-  elseif eventName == Auctionary.Shopping.Events.RecentSearchesUpdate or
-         eventName == Auctionary.Shopping.Events.ListMetaChange or
-         eventName == Auctionary.Shopping.Events.ListItemChange or
-         eventName == Auctionary.Shopping.Events.ListImportFinished then
-    if self:IsVisible() then
-      self:RefreshSidePanel()
-    end
+-- Lists and recents changed somewhere
+function shop:ReceiveEvent()
+  if self.frame:IsVisible() then
+    self:RefreshSide()
   end
 end
 
 Auctionary.Tabs.RegisterContent("Shopping", function(panel)
-  local frame = CreateFrame("Frame", "AuctionaryShoppingTabFrame", panel)
+  local frame = CreateFrame("Frame", "Auctionary2ShoppingTabFrame", panel)
   frame:SetAllPoints(panel)
-  Auctionary.Compat.Mixin(frame, AuctionaryShoppingTabFrameMixin)
-  frame:OnLoad()
+  shop.frame = frame
+  Auctionary.Shopping.Tab = shop
+  BuildTop(shop, frame)
+  BuildSide(shop, frame)
+  BuildResults(shop, frame)
+
+  shop.search = Auctionary.Search.CreateShoppingSearch({
+    onTerm = function(_, _, previous) shop.results:Add(previous) end,
+    onPage = function(progress) shop:OnPage(progress) end,
+    onDone = function(found, stopped) shop:OnDone(found, stopped) end,
+  })
+
+  Auctionary.EventBus:Register(shop, {
+    ListEvents.ListsChanged, ListEvents.ListItemsChanged,
+    ListEvents.ListsImported, ListEvents.RecentsChanged,
+  })
+  frame:SetScript("OnShow", function()
+    shop:RefreshSide()
+    shop.box:SetFocus()
+  end)
+  frame:SetScript("OnHide", function() shop.search:Stop() end)
   panel.Content = frame
 end)

@@ -1,9 +1,10 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- The list of single auctions of one item with a button to buy them, shown in
 -- the Shopping tab after picking a search result. A 3.3.5 server only sells
 -- whole auctions (stacks), so that is what gets bought.
-AuctionaryBuyFrameMixin = {}
+local BuyFrame = {}
 
 local AuctionItemInfo = Auctionary.Constants.AuctionItemInfo
 local PAGE_SIZE = Auctionary.Constants.PageSize
@@ -20,27 +21,27 @@ local UNKNOWN_SELLER_TEXT = "Cheapsell"
 
 local BUY_TABLE_LAYOUT = {
   {
-    headerText = AUCTIONARY_L_BUYOUT_PRICE or "Buyout Price",
-    headerParameters = { "stackPrice" }, cellParameters = { "stackPrice" },
-    cellType = "price", width = 130,
+    title = AUCTIONARY2_L_COL_BUYOUT or "Buyout Price",
+    sort = "stackPrice", field = "stackPrice",
+    kind = "price", width = 130,
   },
   {
-    headerText = AUCTIONARY_L_UNIT_PRICE or "Unit Price",
-    headerParameters = { "unitPrice" }, cellParameters = { "unitPrice" },
-    buyDot = true, cellType = "price", width = 130,
+    title = AUCTIONARY2_L_COL_UNIT_PRICE or "Unit Price",
+    sort = "unitPrice", field = "unitPrice",
+    buyDot = true, kind = "price", width = 130,
   },
   {
-    headerText = AUCTIONARY_L_RESULTS_AVAILABLE_COLUMN or "Available",
-    headerParameters = { "stackSize" }, cellParameters = { "availableText" },
+    title = AUCTIONARY2_L_COL_AVAILABLE or "Available",
+    sort = "stackSize", field = "availableText",
     width = 90,
   },
   {
-    headerText = AUCTIONARY_L_SELLERS_COLUMN or "Seller(s)",
-    headerParameters = { "owner" }, cellParameters = { "owner" },
+    title = AUCTIONARY2_L_COL_SELLER or "Seller(s)",
+    sort = "owner", field = "owner",
   },
   {
-    headerText = AUCTIONARY_L_TIME_LEFT or "Time Left",
-    headerParameters = { "timeLeft" }, cellParameters = { "timeLeftText" },
+    title = AUCTIONARY2_L_COL_TIME_LEFT or "Time Left",
+    sort = "timeLeft", field = "timeLeftText",
     width = 90,
   },
 }
@@ -50,13 +51,13 @@ local BUY_EVENTS = {
   Auctionary.AH.Events.ScanAborted,
 }
 
-function AuctionaryBuyFrameMixin:OnLoad()
-  Auctionary.EventBus:RegisterSource(self, "AuctionaryBuyFrameMixin")
+function BuyFrame:OnLoad()
+  Auctionary.EventBus:RegisterSource(self, "BuyFrame")
 
-  self.DataProvider = Auctionary.Components.CreateDataProvider({
-    layout = BUY_TABLE_LAYOUT,
-    uniqueKey = function(entry) return entry.key end,
-    comparators = {
+  self.rowSet = Auctionary.Components.CreateRowSet({
+    columns = BUY_TABLE_LAYOUT,
+    rowKey = function(entry) return entry.key end,
+    sorters = {
       unitPrice = Auctionary.Utilities.NumberComparator,
       stackPrice = Auctionary.Utilities.NumberComparator,
       stackSize = Auctionary.Utilities.NumberComparator,
@@ -111,14 +112,14 @@ function AuctionaryBuyFrameMixin:OnLoad()
   self.BuyButton:SetWidth(120)
   self.BuyButton:SetHeight(22)
   self.BuyButton:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -2, 2)
-  self.BuyButton:SetText(AUCTIONARY_L_BUY_STACK or "Buy Stack")
+  self.BuyButton:SetText(AUCTIONARY2_L_BUY_STACK or "Buy Stack")
   self.BuyButton:SetScript("OnClick", function()
     self:BuySelected()
   end)
 
   -- How many items are wanted in total; the cheapest stacks are then offered
   -- one after the other (every purchase still needs its own click)
-  self.QuantityBox = CreateFrame("EditBox", "AuctionaryBuyQuantityBox", self, "InputBoxTemplate")
+  self.QuantityBox = CreateFrame("EditBox", "Auctionary2BuyQuantityBox", self, "InputBoxTemplate")
   self.QuantityBox:SetWidth(46)
   self.QuantityBox:SetHeight(20)
   self.QuantityBox:SetPoint("RIGHT", self.BuyButton, "LEFT", -8, 0)
@@ -160,7 +161,7 @@ function AuctionaryBuyFrameMixin:OnLoad()
   self.Status:SetPoint("RIGHT", self.quantityLabel, "LEFT", -8, 0)
   self.Status:SetJustifyH("LEFT")
 
-  self.ResultsListing = Auctionary.Components.CreateResultsListing(self, self.DataProvider, {
+  self.rowTable = Auctionary.Components.CreateTable(self, self.rowSet, {
     onRowClick = function(rowData)
       if not self.bidding then
         self.selectedKey = rowData.key
@@ -171,8 +172,8 @@ function AuctionaryBuyFrameMixin:OnLoad()
       return rowData.key == self.selectedKey
     end,
   })
-  self.ResultsListing:SetPoint("TOPLEFT", self, "TOPLEFT", 0, -36)
-  self.ResultsListing:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 30)
+  self.rowTable:SetPoint("TOPLEFT", self, "TOPLEFT", 0, -36)
+  self.rowTable:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 30)
 
   self:SetScript("OnEvent", self.OnEvent)
   self:SetScript("OnUpdate", self.OnUpdate)
@@ -182,7 +183,7 @@ function AuctionaryBuyFrameMixin:OnLoad()
     if self.bidding then
       return
     end
-    local entry = self.ResultsListing:StepSelection(function(rowData)
+    local entry = self.rowTable:Step(function(rowData)
       return rowData.key == self.selectedKey
     end, delta)
     if entry ~= nil and entry.key ~= self.selectedKey then
@@ -216,7 +217,7 @@ function AuctionaryBuyFrameMixin:OnLoad()
 end
 
 -- result: one entry of the Shopping search results
-function AuctionaryBuyFrameMixin:Open(result)
+function BuyFrame:Open(result)
   self.result = result
   self.Icon:SetTexture(result.iconTexture)
   local _, _, _, hex = GetItemQualityColor(result.quality or 1)
@@ -241,13 +242,13 @@ function AuctionaryBuyFrameMixin:Open(result)
 
   self.rows = self:BuildRows(result.auctions)
   self.selectedKey = self.rows[1] and self.rows[1].key
-  self.DataProvider:SetEntries(self.rows)
+  self.rowSet:Replace(self.rows)
   self:SetStatus("")
   self:Show()
   self:UpdateSelection()
 end
 
-function AuctionaryBuyFrameMixin:Close()
+function BuyFrame:Close()
   self:StopBuying()
   self:Hide()
   if self.onClose then
@@ -256,7 +257,7 @@ function AuctionaryBuyFrameMixin:Close()
 end
 
 -- Identical stacks of one seller become one row
-function AuctionaryBuyFrameMixin:BuildRows(auctions)
+function BuyFrame:BuildRows(auctions)
   local playerName = UnitName("player")
   local isOwnAuction = Auctionary.AH.GetOwnAuctionChecker()
   local byKey, rows = {}, {}
@@ -306,7 +307,7 @@ function AuctionaryBuyFrameMixin:BuildRows(auctions)
 end
 
 -- The cheapest row (per item) that is not the player's own
-function AuctionaryBuyFrameMixin:GetCheapestRow()
+function BuyFrame:GetCheapestRow()
   local best
   for _, row in ipairs(self.rows or {}) do
     if not row.isOwned and #row.auctions > 0 and (best == nil or row.unitPrice < best.unitPrice) then
@@ -317,7 +318,7 @@ function AuctionaryBuyFrameMixin:GetCheapestRow()
 end
 
 -- quantity: how many items are wanted in total (nil or 0 switches it off)
-function AuctionaryBuyFrameMixin:SetWanted(quantity)
+function BuyFrame:SetWanted(quantity)
   if quantity == nil or quantity <= 0 then
     self.wanted = nil
     return
@@ -332,7 +333,7 @@ function AuctionaryBuyFrameMixin:SetWanted(quantity)
   end
 end
 
-function AuctionaryBuyFrameMixin:GetSelectedRow()
+function BuyFrame:GetSelectedRow()
   for _, row in ipairs(self.rows or {}) do
     if row.key == self.selectedKey then
       return row
@@ -340,14 +341,14 @@ function AuctionaryBuyFrameMixin:GetSelectedRow()
   end
 end
 
-function AuctionaryBuyFrameMixin:SetStatus(text)
+function BuyFrame:SetStatus(text)
   self.Status:SetText(text or "")
 end
 
-function AuctionaryBuyFrameMixin:UpdateSelection()
+function BuyFrame:UpdateSelection()
   self:SetStatus("")
   self:Prepare()
-  self.ResultsListing:Refresh()
+  self.rowTable:Refresh()
 end
 
 ---- Buying one auction
@@ -360,7 +361,7 @@ end
 local NO_ANSWER_TEXT = "No answer from the auction house."
 local GONE_TEXT = "This auction no longer exists."
 
-function AuctionaryBuyFrameMixin:CancelLocating()
+function BuyFrame:CancelLocating()
   local locating = self.locating
   if locating ~= nil then
     self.locating = nil
@@ -372,7 +373,7 @@ function AuctionaryBuyFrameMixin:CancelLocating()
 end
 
 -- Gets the cheapest auction of the selected row onto the current page
-function AuctionaryBuyFrameMixin:Prepare()
+function BuyFrame:Prepare()
   self:CancelLocating()
   self.ready = nil
   self.BuyButton:Disable()
@@ -382,7 +383,7 @@ function AuctionaryBuyFrameMixin:Prepare()
     return
   end
   if row.isOwned then
-    self:SetStatus(AUCTIONARY_L_OWNED_COLUMN or "Owned?")
+    self:SetStatus(AUCTIONARY2_L_COL_OWN or "Owned?")
     return
   end
   if GetMoney() < row.stackPrice then
@@ -417,7 +418,7 @@ function AuctionaryBuyFrameMixin:Prepare()
   end
 end
 
-function AuctionaryBuyFrameMixin:TryNextPage()
+function BuyFrame:TryNextPage()
   local locating = self.locating
   local page = table.remove(locating.pagesToTry, 1)
   while page ~= nil and locating.tried[page] do
@@ -436,7 +437,7 @@ end
 -- What the wanted quantity costs when the cheapest stacks are bought one
 -- after the other (whole stacks, so it can be a little more than wanted).
 -- Returns the cost and how many items that covers.
-function AuctionaryBuyFrameMixin:EstimateWantedCost(quantity)
+function BuyFrame:EstimateWantedCost(quantity)
   local rows = {}
   for _, row in ipairs(self.rows or {}) do
     if not row.isOwned and #row.auctions > 0 then
@@ -462,7 +463,7 @@ function AuctionaryBuyFrameMixin:EstimateWantedCost(quantity)
   return cost, covered
 end
 
-function AuctionaryBuyFrameMixin:SetReady(row, auction)
+function BuyFrame:SetReady(row, auction)
   self.ready = { row = row, auction = auction }
   self.BuyButton:Enable()
   local text = row.stackSize .. " x " .. self.result.name .. ": "
@@ -481,7 +482,7 @@ function AuctionaryBuyFrameMixin:SetReady(row, auction)
   self:SetStatus(text)
 end
 
-function AuctionaryBuyFrameMixin:ReceiveEvent(eventName, results, total)
+function BuyFrame:ReceiveEvent(eventName, results, total)
   local locating = self.locating
   if locating == nil then
     return
@@ -510,7 +511,7 @@ function AuctionaryBuyFrameMixin:ReceiveEvent(eventName, results, total)
 end
 
 -- Runs inside the click on the Buy button
-function AuctionaryBuyFrameMixin:BuySelected()
+function BuyFrame:BuySelected()
   local ready = self.ready
   if ready == nil or self.bidding then
     return
@@ -552,14 +553,14 @@ function AuctionaryBuyFrameMixin:BuySelected()
     bidTime = GetTime(),
   }
   self.BuyButton:Disable()
-  self:SetStatus((AUCTIONARY_L_BUYING or "Buying") .. " ...")
+  self:SetStatus((AUCTIONARY2_L_BUYING or "Buying") .. " ...")
   self:RegisterEvent("PLAYER_MONEY")
   self:RegisterEvent("UI_ERROR_MESSAGE")
 
   PlaceAuctionBid("list", index, buyout)
 end
 
-function AuctionaryBuyFrameMixin:OnEvent(eventName, message)
+function BuyFrame:OnEvent(eventName, message)
   local bidding = self.bidding
   if bidding == nil then
     return
@@ -573,14 +574,14 @@ function AuctionaryBuyFrameMixin:OnEvent(eventName, message)
   end
 end
 
-function AuctionaryBuyFrameMixin:OnUpdate()
+function BuyFrame:OnUpdate()
   local bidding = self.bidding
   if bidding ~= nil and GetTime() - bidding.bidTime > BUY_TIMEOUT then
     self:FinishBidding(false, NO_ANSWER_TEXT)
   end
 end
 
-function AuctionaryBuyFrameMixin:StopBuying()
+function BuyFrame:StopBuying()
   self:CancelLocating()
   self.ready = nil
   if self.bidding ~= nil then
@@ -590,7 +591,7 @@ function AuctionaryBuyFrameMixin:StopBuying()
   end
 end
 
-function AuctionaryBuyFrameMixin:RemoveAuction(row, auction)
+function BuyFrame:RemoveAuction(row, auction)
   for index, other in ipairs(row.auctions) do
     if other == auction then
       table.remove(row.auctions, index)
@@ -617,10 +618,10 @@ function AuctionaryBuyFrameMixin:RemoveAuction(row, auction)
   else
     row.availableText = #row.auctions .. " x " .. row.stackSize
   end
-  self.DataProvider:SetEntries(self.rows)
+  self.rowSet:Replace(self.rows)
 end
 
-function AuctionaryBuyFrameMixin:FinishBidding(success, message)
+function BuyFrame:FinishBidding(success, message)
   local bidding = self.bidding
   if bidding == nil then
     return
@@ -635,7 +636,7 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
       Auctionary.GoldLog.Add("b", self.result and self.result.name, row.itemLink, row.stackSize, row.stackPrice, "Shopping")
     end
     self:RemoveAuction(row, bidding.auction)
-    Auctionary.Utilities.Message((AUCTIONARY_L_BUYING_X_FOR_X or "Buying %s for %s"):format(
+    Auctionary.Utilities.Message((AUCTIONARY2_L_BUYING_FOR or "Buying %s for %s"):format(
       row.stackSize .. " x " .. self.result.name,
       Auctionary.Compat.GetMoneyString(row.stackPrice, true)
     ))
@@ -666,16 +667,22 @@ function AuctionaryBuyFrameMixin:FinishBidding(success, message)
     -- Get the next one ready
     self:UpdateSelection()
   else
-    self.ResultsListing:Refresh()
+    self.rowTable:Refresh()
     self:SetStatus(Auctionary.Compat.Colors.RED_FONT_COLOR:WrapTextInColorCode(message or ""))
     -- The list has to be loaded again before another try; picking a row does that
   end
 end
 
 function Auctionary.Buying.CreateFrame(parent)
-  local frame = CreateFrame("Frame", "AuctionaryBuyFrame", parent)
-  Auctionary.Compat.Mixin(frame, AuctionaryBuyFrameMixin)
+  local frame = CreateFrame("Frame", "Auctionary2BuyFrame", parent)
+  Auctionary.Compat.Mixin(frame, BuyFrame)
   frame:Hide()
   frame:OnLoad()
   return frame
+end
+
+-- Auctions grouped into rows of the same stack size and price (the Selling
+-- tab shows the competition with these)
+function Auctionary.Buying.GroupAuctions(auctions)
+  return BuyFrame.BuildRows(nil, auctions)
 end

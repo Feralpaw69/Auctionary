@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Runs name/category searches against the 3.3.5 auction house, one page of 50
 -- auctions at a time.
@@ -17,7 +18,7 @@ local Auctionary = Auctionary
 --   timeLeft  = GetAuctionItemTimeLeft("list", index),   see Constants.TimeLeftBand
 --   index, page, query
 -- }
-AuctionaryAHScanFrameMixin = {}
+local ScanFrame = {}
 
 local PAGE_SIZE = Auctionary.Constants.PageSize
 -- Seconds to wait for seller names/item links that the server sends late
@@ -28,11 +29,11 @@ local STALE_WAIT = 1
 local ANSWER_TIMEOUT = 12
 local MAX_RETRIES = 3
 
-function AuctionaryAHScanFrameMixin:OnLoad()
+function ScanFrame:OnLoad()
   self.active = false
   self:SetScript("OnEvent", self.OnEvent)
   self:RegisterEvent("AUCTION_HOUSE_CLOSED")
-  Auctionary.EventBus:RegisterSource(self, "AuctionaryAHScanFrameMixin")
+  Auctionary.EventBus:RegisterSource(self, "ScanFrame")
 
   -- Another addon (or the Browse tab) searching while a scan runs replaces
   -- the results the scan is waiting for, so the scan has to stop.
@@ -44,7 +45,7 @@ function AuctionaryAHScanFrameMixin:OnLoad()
   end)
 end
 
-function AuctionaryAHScanFrameMixin:Start(query, page, singlePage)
+function ScanFrame:Start(query, page, singlePage)
   self:Abort()
 
   self.query = query
@@ -60,11 +61,11 @@ function AuctionaryAHScanFrameMixin:Start(query, page, singlePage)
   self:SendPage()
 end
 
-function AuctionaryAHScanFrameMixin:IsActive()
+function ScanFrame:IsActive()
   return self.active
 end
 
-function AuctionaryAHScanFrameMixin:Stop()
+function ScanFrame:Stop()
   if self.sendFunc ~= nil then
     Auctionary.AH.Queue:Remove(self.sendFunc)
     self.sendFunc = nil
@@ -75,14 +76,14 @@ function AuctionaryAHScanFrameMixin:Stop()
   self:SetScript("OnUpdate", nil)
 end
 
-function AuctionaryAHScanFrameMixin:Abort()
+function ScanFrame:Abort()
   if self.active then
     self:Stop()
     Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ScanAborted)
   end
 end
 
-function AuctionaryAHScanFrameMixin:SendPage()
+function ScanFrame:SendPage()
   local query = self.query
   local page = self.page
 
@@ -114,7 +115,7 @@ function AuctionaryAHScanFrameMixin:SendPage()
   Auctionary.AH.Queue:Enqueue(self.sendFunc)
 end
 
-function AuctionaryAHScanFrameMixin:OnEvent(eventName)
+function ScanFrame:OnEvent(eventName)
   if eventName == "AUCTION_ITEM_LIST_UPDATE" then
     if self.awaiting then
       if not self.gotAnswer then
@@ -131,7 +132,7 @@ function AuctionaryAHScanFrameMixin:OnEvent(eventName)
   end
 end
 
-function AuctionaryAHScanFrameMixin:OnUpdate()
+function ScanFrame:OnUpdate()
   if not self.awaiting then
     return
   end
@@ -163,7 +164,7 @@ local function GetFingerprint()
   return table.concat(parts, "|")
 end
 
-function AuctionaryAHScanFrameMixin:HasAllDetails()
+function ScanFrame:HasAllDetails()
   local ownerIndex = Auctionary.Constants.AuctionItemInfo.Owner
   local needOwners = self.query.needOwners
   local numBatch = GetNumAuctionItems("list")
@@ -185,7 +186,7 @@ function AuctionaryAHScanFrameMixin:HasAllDetails()
   return true
 end
 
-function AuctionaryAHScanFrameMixin:ProcessPage()
+function ScanFrame:ProcessPage()
   self.awaiting = false
   self:UnregisterEvent("AUCTION_ITEM_LIST_UPDATE")
   self:SetScript("OnUpdate", nil)
@@ -240,3 +241,6 @@ function AuctionaryAHScanFrameMixin:ProcessPage()
 
   Auctionary.EventBus:Fire(self, Auctionary.AH.Events.ScanResultsUpdate, results, gotAllResults, progress)
 end
+
+-- AH/Core.lua puts these methods on the scan frame
+Auctionary.AH.ScanFrameMethods = ScanFrame

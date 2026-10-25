@@ -1,4 +1,5 @@
-local Auctionary = Auctionary
+-- Auctionary 2.0 - Copyright (c) 2026 Feralpaw - MIT licence, see LICENSE.txt
+local Auctionary = Auctionary2
 
 -- Small windows shared by the tabs: price history of an item, a text window
 -- for importing/exporting shopping lists, and the default stack sizes.
@@ -65,49 +66,49 @@ end
 ---- Price history / own posting history
 
 local PRICE_LAYOUT = {
-  { headerText = "Date", headerParameters = { "rawDay" }, cellParameters = { "date" }, width = 190 },
-  { headerText = "Lowest", headerParameters = { "minSeen" }, cellParameters = { "minSeen" }, cellType = "price", width = 120 },
-  { headerText = "Highest", headerParameters = { "maxSeen" }, cellParameters = { "maxSeen" }, cellType = "price", width = 120 },
-  { headerText = "Available", headerParameters = { "available" }, cellParameters = { "available" } },
+  { title = "Date", sort = "rawDay", field = "date", width = 190 },
+  { title = "Lowest", sort = "minSeen", field = "minSeen", kind = "price", width = 120 },
+  { title = "Highest", sort = "maxSeen", field = "maxSeen", kind = "price", width = 120 },
+  { title = "Available", sort = "available", field = "available" },
 }
 local POSTING_LAYOUT = {
-  { headerText = "Date", headerParameters = { "rawDay" }, cellParameters = { "date" }, width = 190 },
-  { headerText = "Unit Price", headerParameters = { "price" }, cellParameters = { "price" }, cellType = "price", width = 140 },
-  { headerText = "Quantity", headerParameters = { "quantity" }, cellParameters = { "quantity" } },
+  { title = "Date", sort = "rawDay", field = "date", width = 190 },
+  { title = "Unit Price", sort = "price", field = "price", kind = "price", width = 140 },
+  { title = "Quantity", sort = "quantity", field = "quantity" },
 }
 
 local ALL_POSTINGS_LAYOUT = {
-  { headerText = "Item", headerParameters = { "name" }, cellParameters = { "name" }, cellType = "item" },
-  { headerText = "Date", headerParameters = { "rawDay" }, cellParameters = { "date" }, width = 170 },
-  { headerText = "Unit Price", headerParameters = { "price" }, cellParameters = { "price" }, cellType = "price", width = 110 },
-  { headerText = "Qty", headerParameters = { "quantity" }, cellParameters = { "quantity" }, width = 50 },
+  { title = "Item", sort = "name", field = "name", kind = "item" },
+  { title = "Date", sort = "rawDay", field = "date", width = 170 },
+  { title = "Unit Price", sort = "price", field = "price", kind = "price", width = 110 },
+  { title = "Qty", sort = "quantity", field = "quantity", width = 50 },
 }
 
 local historyDialog
 
 local function CreateHistoryDialog()
-  local dialog = CreateDialog("AuctionaryHistoryDialog", 560, 360, "")
+  local dialog = CreateDialog("Auctionary2HistoryDialog", 560, 360, "")
   local number = Auctionary.Utilities.NumberComparator
 
-  dialog.priceProvider = Auctionary.Components.CreateDataProvider({
-    layout = PRICE_LAYOUT,
-    comparators = { rawDay = number, minSeen = number, maxSeen = number, available = number },
+  dialog.priceSet = Auctionary.Components.CreateRowSet({
+    columns = PRICE_LAYOUT,
+    sorters = { rawDay = number, minSeen = number, maxSeen = number, available = number },
   })
-  dialog.postingProvider = Auctionary.Components.CreateDataProvider({
-    layout = POSTING_LAYOUT,
-    comparators = { rawDay = number, price = number, quantity = number },
+  dialog.postingSet = Auctionary.Components.CreateRowSet({
+    columns = POSTING_LAYOUT,
+    sorters = { rawDay = number, price = number, quantity = number },
   })
-  dialog.priceListing = Auctionary.Components.CreateResultsListing(dialog, dialog.priceProvider, {
+  dialog.priceTable = Auctionary.Components.CreateTable(dialog, dialog.priceSet, {
     emptyText = "No scan has seen this item yet.",
   })
-  dialog.postingListing = Auctionary.Components.CreateResultsListing(dialog, dialog.postingProvider, {
+  dialog.postingTable = Auctionary.Components.CreateTable(dialog, dialog.postingSet, {
     emptyText = "You have not posted this item with this addon yet.",
   })
-  dialog.allProvider = Auctionary.Components.CreateDataProvider({
-    layout = ALL_POSTINGS_LAYOUT,
-    comparators = { rawDay = number, price = number, quantity = number },
+  dialog.allSet = Auctionary.Components.CreateRowSet({
+    columns = ALL_POSTINGS_LAYOUT,
+    sorters = { rawDay = number, price = number, quantity = number },
   })
-  dialog.allListing = Auctionary.Components.CreateResultsListing(dialog, dialog.allProvider, {
+  dialog.allTable = Auctionary.Components.CreateTable(dialog, dialog.allSet, {
     emptyText = "You have not posted anything with this addon yet.",
     onRowClick = function(rowData)
       if rowData.itemLink ~= nil then
@@ -115,13 +116,13 @@ local function CreateHistoryDialog()
       end
     end,
   })
-  dialog.allListing:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -36)
-  dialog.allListing:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
-  dialog.allListing:Hide()
+  dialog.allTable:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -36)
+  dialog.allTable:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
+  dialog.allTable:Hide()
 
-  for _, listing in ipairs({ dialog.priceListing, dialog.postingListing }) do
-    listing:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -62)
-    listing:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
+  for _, rowTable in ipairs({ dialog.priceTable, dialog.postingTable }) do
+    rowTable:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -62)
+    rowTable:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
   end
 
   local function ViewButton(text, x, view)
@@ -145,24 +146,24 @@ local function CreateHistoryDialog()
 
   function dialog:SetView(view)
     if view == "all" then
-      self.priceListing:Hide()
-      self.postingListing:Hide()
+      self.priceTable:Hide()
+      self.postingTable:Hide()
       self.priceButton:Hide()
       self.postingButton:Hide()
-      self.allListing:Show()
+      self.allTable:Show()
       return
     end
-    self.allListing:Hide()
+    self.allTable:Hide()
     self.priceButton:Show()
     self.postingButton:Show()
     if view == "posting" then
-      self.priceListing:Hide()
-      self.postingListing:Show()
+      self.priceTable:Hide()
+      self.postingTable:Show()
       self.postingButton:LockHighlight()
       self.priceButton:UnlockHighlight()
     else
-      self.postingListing:Hide()
-      self.priceListing:Show()
+      self.postingTable:Hide()
+      self.priceTable:Show()
       self.priceButton:LockHighlight()
       self.postingButton:UnlockHighlight()
     end
@@ -193,7 +194,7 @@ function Auctionary.Components.ShowHistory(itemLink, view)
     for _, entry in ipairs(prices) do
       entry.available = entry.available or ""
     end
-    dialog.priceProvider:SetEntries(prices)
+    dialog.priceSet:Replace(prices)
 
     local postings = {}
     if Auctionary.PostingHistory ~= nil and Auctionary.PostingHistory.GetPriceHistory ~= nil then
@@ -203,7 +204,7 @@ function Auctionary.Components.ShowHistory(itemLink, view)
         table.insert(postings, all[index])
       end
     end
-    dialog.postingProvider:SetEntries(postings)
+    dialog.postingSet:Replace(postings)
 
     local average = Auctionary.Database:GetScanAverage(
       dbKey, Auctionary.Config.Get(Auctionary.Config.Options.AUCTION_MEAN_DAYS_LIMIT)
@@ -257,10 +258,10 @@ function Auctionary.Components.ShowAllPostings()
   dialog:Show()
   -- Filled after the list is visible: coin icons in text set on a hidden
   -- list do not get drawn by this client
-  dialog.allProvider:SetEntries(entries)
+  dialog.allSet:Replace(entries)
   Auctionary.Compat.After(0.05, function()
-    if dialog.allListing:IsVisible() then
-      dialog.allListing:Refresh()
+    if dialog.allTable:IsVisible() then
+      dialog.allTable:Refresh()
     end
   end)
 end
@@ -270,7 +271,7 @@ end
 local textDialog
 
 local function CreateTextDialog()
-  local dialog = CreateDialog("AuctionaryTextDialog", 460, 300, "")
+  local dialog = CreateDialog("Auctionary2TextDialog", 460, 300, "")
 
   dialog.hint = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   dialog.hint:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -36)
@@ -288,11 +289,11 @@ local function CreateTextDialog()
   })
   area:SetBackdropColor(0, 0, 0, 1)
 
-  local scroll = CreateFrame("ScrollFrame", "AuctionaryTextDialogScroll", area, "UIPanelScrollFrameTemplate")
+  local scroll = CreateFrame("ScrollFrame", "Auctionary2TextDialogScroll", area, "UIPanelScrollFrameTemplate")
   scroll:SetPoint("TOPLEFT", area, "TOPLEFT", 6, -6)
   scroll:SetPoint("BOTTOMRIGHT", area, "BOTTOMRIGHT", -6, 6)
 
-  local editBox = CreateFrame("EditBox", "AuctionaryTextDialogEditBox", scroll)
+  local editBox = CreateFrame("EditBox", "Auctionary2TextDialogEditBox", scroll)
   editBox:SetMultiLine(true)
   editBox:SetAutoFocus(false)
   editBox:SetFontObject(ChatFontNormal)
@@ -309,7 +310,7 @@ local function CreateTextDialog()
   end)
   dialog.editBox = editBox
 
-  dialog.acceptButton = CreateFrame("Button", "AuctionaryTextDialogAccept", dialog, "UIPanelButtonTemplate")
+  dialog.acceptButton = CreateFrame("Button", "Auctionary2TextDialogAccept", dialog, "UIPanelButtonTemplate")
   dialog.acceptButton:SetWidth(90)
   dialog.acceptButton:SetHeight(22)
   dialog.acceptButton:SetPoint("RIGHT", dialog.closeButton, "LEFT", -6, 0)
@@ -367,7 +368,7 @@ local function CreateQuantitiesDialog()
   end
   table.sort(classIDs)
 
-  local dialog = CreateDialog("AuctionaryQuantitiesDialog", 300, 96 + #classIDs * 22, "Default stack sizes")
+  local dialog = CreateDialog("Auctionary2QuantitiesDialog", 300, 96 + #classIDs * 22, "Default stack sizes")
   local hint = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   hint:SetPoint("TOPLEFT", dialog, "TOPLEFT", 18, -34)
   hint:SetText("Items per stack when you pick an item to sell.\n0 = a full stack.")
@@ -380,7 +381,7 @@ local function CreateQuantitiesDialog()
     label:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20, y)
     label:SetText(classNames[classID] or ("Class " .. classID))
 
-    local box = CreateFrame("EditBox", "AuctionaryQuantitiesBox" .. classID, dialog, "InputBoxTemplate")
+    local box = CreateFrame("EditBox", "Auctionary2QuantitiesBox" .. classID, dialog, "InputBoxTemplate")
     box:SetWidth(40)
     box:SetHeight(18)
     box:SetPoint("TOPLEFT", dialog, "TOPLEFT", 200, y + 4)
@@ -514,12 +515,12 @@ mailFrame:SetScript("OnEvent", function()
 end)
 
 local SALES_LAYOUT = {
-  { headerText = "Item", headerParameters = { "name" }, cellParameters = { "name" }, cellType = "item" },
-  { headerText = "Result", headerParameters = { "result" }, cellParameters = { "resultText" }, width = 70 },
-  { headerText = "Gold", headerParameters = { "gold" }, cellParameters = { "goldText" }, width = 110 },
-  { headerText = "Buyer", headerParameters = { "buyer" }, cellParameters = { "buyer" }, width = 100 },
-  { headerText = "Character", headerParameters = { "character" }, cellParameters = { "character" }, width = 90 },
-  { headerText = "Date", headerParameters = { "rawTime" }, cellParameters = { "date" }, width = 110 },
+  { title = "Item", sort = "name", field = "name", kind = "item" },
+  { title = "Result", sort = "result", field = "resultText", width = 70 },
+  { title = "Gold", sort = "gold", field = "goldText", width = 110 },
+  { title = "Buyer", sort = "buyer", field = "buyer", width = 100 },
+  { title = "Character", sort = "character", field = "character", width = 90 },
+  { title = "Date", sort = "rawTime", field = "date", width = 110 },
 }
 local salesDialog
 
@@ -527,16 +528,16 @@ function Auctionary.Components.ShowSales()
   if salesDialog == nil then
     local number = Auctionary.Utilities.NumberComparator
     local text = Auctionary.Utilities.StringComparator
-    salesDialog = CreateDialog("AuctionarySalesDialog", 700, 440, "Sales Summary")
-    salesDialog.provider = Auctionary.Components.CreateDataProvider({
-      layout = SALES_LAYOUT,
-      comparators = { name = text, result = text, gold = number, buyer = text, character = text, rawTime = number },
+    salesDialog = CreateDialog("Auctionary2SalesDialog", 700, 440, "Sales Summary")
+    salesDialog.rowSet = Auctionary.Components.CreateRowSet({
+      columns = SALES_LAYOUT,
+      sorters = { name = text, result = text, gold = number, buyer = text, character = text, rawTime = number },
     })
-    salesDialog.listing = Auctionary.Components.CreateResultsListing(salesDialog, salesDialog.provider, {
+    salesDialog.rowTable = Auctionary.Components.CreateTable(salesDialog, salesDialog.rowSet, {
       emptyText = "Nothing recorded yet. Open your mailbox: auction house mail is counted from then on.",
     })
-    salesDialog.listing:SetPoint("TOPLEFT", salesDialog, "TOPLEFT", 14, -96)
-    salesDialog.listing:SetPoint("BOTTOMRIGHT", salesDialog, "BOTTOMRIGHT", -14, 40)
+    salesDialog.rowTable:SetPoint("TOPLEFT", salesDialog, "TOPLEFT", 14, -96)
+    salesDialog.rowTable:SetPoint("BOTTOMRIGHT", salesDialog, "BOTTOMRIGHT", -14, 40)
     salesDialog.totals = salesDialog:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     salesDialog.totals:SetPoint("TOPLEFT", salesDialog, "TOPLEFT", 18, -38)
     salesDialog.totals:SetPoint("RIGHT", salesDialog, "RIGHT", -18, 0)
@@ -597,10 +598,10 @@ function Auctionary.Components.ShowSales()
   dialog.totals:SetText(table.concat(lines, "\n"))
   dialog.summary:SetText("Gold is what arrived by mail (after the fee). Only mail seen in an open mailbox is counted.")
   dialog:Show()
-  dialog.provider:SetEntries(entries)
+  dialog.rowSet:Replace(entries)
   Auctionary.Compat.After(0.05, function()
-    if dialog.listing:IsVisible() then
-      dialog.listing:Refresh()
+    if dialog.rowTable:IsVisible() then
+      dialog.rowTable:Refresh()
     end
   end)
 end
@@ -876,13 +877,13 @@ if hooksecurefunc ~= nil then
 end
 
 local GOLD_LAYOUT = {
-  { headerText = "Item", headerParameters = { "name" }, cellParameters = { "name" }, cellType = "item" },
-  { headerText = "Type", headerParameters = { "kind" }, cellParameters = { "kindText" }, width = 70 },
-  { headerText = "Qty", headerParameters = { "quantity" }, cellParameters = { "quantity" }, width = 45 },
-  { headerText = "Gold", headerParameters = { "gold" }, cellParameters = { "goldText" }, width = 120 },
-  { headerText = "Where", headerParameters = { "source" }, cellParameters = { "source" }, width = 70 },
-  { headerText = "Character", headerParameters = { "character" }, cellParameters = { "character" }, width = 90 },
-  { headerText = "Date", headerParameters = { "rawTime" }, cellParameters = { "date" }, width = 105 },
+  { title = "Item", sort = "name", field = "name", kind = "item" },
+  { title = "Type", sort = "kind", field = "kindText", width = 70 },
+  { title = "Qty", sort = "quantity", field = "quantity", width = 45 },
+  { title = "Gold", sort = "gold", field = "goldText", width = 120 },
+  { title = "Where", sort = "source", field = "source", width = 70 },
+  { title = "Character", sort = "character", field = "character", width = 90 },
+  { title = "Date", sort = "rawTime", field = "date", width = 105 },
 }
 local KIND_TEXT = {
   s = "|cff20ff20Sold|r", b = "|cffff6060Bought|r", d = "|cffffa040Deposit|r", e = "|cff909090Expired|r",
@@ -1023,18 +1024,18 @@ local function SnipingSummary(realm)
 end
 
 local function CreateGoldDialog()
-  local dialog = CreateDialog("AuctionaryGoldDialog", 760, 590, "Gold Tracker")
+  local dialog = CreateDialog("Auctionary2GoldDialog", 760, 590, "Gold Tracker")
   local number = Auctionary.Utilities.NumberComparator
   local text = Auctionary.Utilities.StringComparator
   dialog.range = MakeRange("7d")
   dialog.history = {}
 
   -- Period drop-down
-  dialog.periodButton = CreateFrame("Button", "AuctionaryGoldPeriodButton", dialog, "UIPanelButtonTemplate")
+  dialog.periodButton = CreateFrame("Button", "Auctionary2GoldPeriodButton", dialog, "UIPanelButtonTemplate")
   dialog.periodButton:SetWidth(190)
   dialog.periodButton:SetHeight(22)
   dialog.periodButton:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -32)
-  dialog.periodMenu = CreateFrame("Frame", "AuctionaryGoldPeriodMenu", UIParent, "UIDropDownMenuTemplate")
+  dialog.periodMenu = CreateFrame("Frame", "Auctionary2GoldPeriodMenu", UIParent, "UIDropDownMenuTemplate")
   UIDropDownMenu_Initialize(dialog.periodMenu, function(_, level)
     local function Add(text, kind, value)
       local info = UIDropDownMenu_CreateInfo()
@@ -1089,18 +1090,18 @@ local function CreateGoldDialog()
     ToggleDropDownMenu(1, nil, dialog.periodMenu, button, 0, 0)
   end)
 
-  dialog.backButton = CreateFrame("Button", "AuctionaryGoldBackButton", dialog, "UIPanelButtonTemplate")
+  dialog.backButton = CreateFrame("Button", "Auctionary2GoldBackButton", dialog, "UIPanelButtonTemplate")
   dialog.backButton:SetWidth(70)
   dialog.backButton:SetHeight(22)
   dialog.backButton:SetPoint("LEFT", dialog.periodButton, "RIGHT", 6, 0)
   dialog.backButton:SetText("< Back")
 
   -- Whose gold: all characters or one of them
-  dialog.characterButton = CreateFrame("Button", "AuctionaryGoldCharacterButton", dialog, "UIPanelButtonTemplate")
+  dialog.characterButton = CreateFrame("Button", "Auctionary2GoldCharacterButton", dialog, "UIPanelButtonTemplate")
   dialog.characterButton:SetWidth(210)
   dialog.characterButton:SetHeight(22)
   dialog.characterButton:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -16, -32)
-  dialog.characterMenu = CreateFrame("Frame", "AuctionaryGoldCharacterMenu", UIParent, "UIDropDownMenuTemplate")
+  dialog.characterMenu = CreateFrame("Frame", "Auctionary2GoldCharacterMenu", UIParent, "UIDropDownMenuTemplate")
   UIDropDownMenu_Initialize(dialog.characterMenu, function()
     local function Add(text, character)
       local info = UIDropDownMenu_CreateInfo()
@@ -1182,15 +1183,15 @@ local function CreateGoldDialog()
   dialog.chartScale = dialog:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   dialog.chartScale:SetPoint("BOTTOMLEFT", chart, "TOPLEFT", 0, 2)
 
-  dialog.provider = Auctionary.Components.CreateDataProvider({
-    layout = GOLD_LAYOUT,
-    comparators = { name = text, kind = text, quantity = number, gold = number, source = text, character = text, rawTime = number },
+  dialog.rowSet = Auctionary.Components.CreateRowSet({
+    columns = GOLD_LAYOUT,
+    sorters = { name = text, kind = text, quantity = number, gold = number, source = text, character = text, rawTime = number },
   })
-  dialog.listing = Auctionary.Components.CreateResultsListing(dialog, dialog.provider, {
+  dialog.rowTable = Auctionary.Components.CreateTable(dialog, dialog.rowSet, {
     emptyText = "Nothing recorded in this period.",
   })
-  dialog.listing:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -300)
-  dialog.listing:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
+  dialog.rowTable:SetPoint("TOPLEFT", dialog, "TOPLEFT", 14, -300)
+  dialog.rowTable:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -14, 40)
 
   dialog.summary = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   dialog.summary:SetPoint("BOTTOMLEFT", dialog, "BOTTOMLEFT", 16, 18)
@@ -1475,7 +1476,7 @@ function Auctionary.Components.ShowGoldTracker()
       expired > 0 and ("     |cff909090" .. expired .. " expired|r") or ""))
   end
   -- Sniping (only where the tab exists), over everything recorded
-  if AuctionarySnipingTabFrameMixin ~= nil and Auctionary.Config.Get(Auctionary.Config.Options.GOLD_TRACKER_SNIPING) then
+  if Auctionary.Sniping.Available and Auctionary.Config.Get(Auctionary.Config.Options.GOLD_TRACKER_SNIPING) then
     local ok, snipe = pcall(SnipingSummary, realm)
     if ok and snipe.bought > 0 then
       local vendorMade = snipe.vendorIncome - snipe.vendorCost
@@ -1541,10 +1542,10 @@ function Auctionary.Components.ShowGoldTracker()
 
   table.sort(entries, function(a, b) return a.rawTime > b.rawTime end)
   dialog:Show()
-  dialog.provider:SetEntries(entries)
+  dialog.rowSet:Replace(entries)
   Auctionary.Compat.After(0.05, function()
-    if dialog.listing:IsVisible() then
-      dialog.listing:Refresh()
+    if dialog.rowTable:IsVisible() then
+      dialog.rowTable:Refresh()
     end
   end)
 end

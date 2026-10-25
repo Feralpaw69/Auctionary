@@ -1,8 +1,8 @@
--- Auctionary compatibility layer for the 3.3.5a (Interface 30300) client.
--- Everything lives inside the Auctionary namespace: no missing modern
+-- Auctionary2 compatibility layer for the 3.3.5a (Interface 30300) client.
+-- Everything lives inside the Auctionary2 namespace: no missing modern
 -- globals (Mixin, C_Timer, ...) are created, so other addons that feature-detect
 -- them are not affected.
-local Auctionary = Auctionary
+local Auctionary = Auctionary2
 
 Auctionary.Compat = {}
 local Compat = Auctionary.Compat
@@ -350,7 +350,7 @@ end
 local scanTooltip
 function Compat.GetScanTooltip()
   if scanTooltip == nil then
-    scanTooltip = CreateFrame("GameTooltip", "AuctionaryScanTooltip", nil, "GameTooltipTemplate")
+    scanTooltip = CreateFrame("GameTooltip", "Auctionary2ScanTooltip", nil, "GameTooltipTemplate")
     scanTooltip:SetScript("OnTooltipSetItem", nil)
     scanTooltip:SetScript("OnTooltipAddMoney", nil)
     scanTooltip:SetScript("OnTooltipCleared", nil)
@@ -367,7 +367,7 @@ end
 -- supplied texts
 function Compat.ScanTooltipHasLine(tooltip, texts)
   for line = 1, tooltip:NumLines() do
-    local fontString = _G["AuctionaryScanTooltipTextLeft" .. line]
+    local fontString = _G["Auctionary2ScanTooltipTextLeft" .. line]
     local text = fontString and fontString:GetText()
     if text ~= nil then
       for _, wanted in ipairs(texts) do
