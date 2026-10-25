@@ -47,7 +47,7 @@ Vendor, Auction, Average, Age, Mats Cost, Disenchant, Prospect, Mill.
 
 ## Installing and updating
 
-- The Auctionary folder goes into `Interface\AddOns`.
+- The Auctionary folder goes into `Interface\AddOns`. With *Code → Download ZIP* it sits inside `Auctionary-main` – copy only the inner `Auctionary` folder.
 - After an update that adds files, restart the game completely; otherwise `/reload` is enough.
 - `/aury` lists the chat commands.
 - It runs alongside TradeSkillMaster. Running it together with other auction house addons works but crowds the tab bar.
